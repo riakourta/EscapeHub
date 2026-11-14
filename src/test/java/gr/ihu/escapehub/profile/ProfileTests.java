@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -29,7 +29,7 @@ public class ProfileTests {
     private ObjectMapper objectMapper;
 
     // Εικονικό Service (mock) αφού δεν έχουμε βάση δεδομένων συνδεδεμένη στο τεστ
-    @MockBean
+    @MockitoBean
     private ProfileService profileService;
 
     // ΤΕΣΤ 1: Απορρίπτει τα αιτήματα χωρίς σύνδεση (Ολοκληρώθηκε)
@@ -41,7 +41,7 @@ public class ProfileTests {
 
     // ΤΕΣΤ 2: Επιβεβαιώνει την ανανέωση του προφίλ
     @Test
-    // @WithMockUser // Ίσως χρειαστεί να βγάλεις το σχόλιο αργότερα αν το Άτομο 1 ενεργοποιήσει το Security
+    @org.springframework.security.test.context.support.WithMockUser
     public void shouldUpdateProfileSuccessfully() throws Exception {
 
         // 1. Προετοιμάζουμε τα δεδομένα που στέλνει υποθετικά ο χρήστης
@@ -61,7 +61,7 @@ public class ProfileTests {
 
         // 3. Εκτελούμε το PUT αίτημα με τα δεδομένα σε μορφή JSON
         mockMvc.perform(put("/api/profile")
-                        // .with(csrf()) // Το ίδιο, μπορεί να χρειαστεί όταν το Άτομο 1 ενώσει το Security
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 // 4. Ελέγχουμε αν το σύστημα απαντάει σωστά με τα νέα δεδομένα
