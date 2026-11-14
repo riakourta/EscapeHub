@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ProfileController.class)
+@org.springframework.context.annotation.Import(gr.ihu.escapehub.auth.config.SecurityConfig.class)
 public class ProfileTests {
 
     @Autowired
@@ -56,7 +57,7 @@ public class ProfileTests {
         updatedProfile.setAvatarColor("Red");
 
         // Λέμε στο εικονικό Service: "Όταν σου ζητήσουν update, επέστρεψε το updatedProfile"
-        Mockito.when(profileService.updateProfile(Mockito.anyLong(), Mockito.any(UpdateProfileDto.class)))
+        Mockito.when(profileService.updateProfile(Mockito.anyString(), Mockito.any(UpdateProfileDto.class)))
                 .thenReturn(updatedProfile);
 
         // 3. Εκτελούμε το PUT αίτημα με τα δεδομένα σε μορφή JSON

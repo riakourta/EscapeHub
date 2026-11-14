@@ -1,1 +1,9 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>EscapeHub — Login</title><style>body{font:18px system-ui;background:#101827;color:#eef;margin:40px auto;max-width:900px;padding:20px}button,input{font:inherit;padding:10px;margin:8px}a{color:#63e6be}canvas{max-width:100%;border:2px solid #64748b}</style><h1>EscapeHub — Login</h1><p>Local demo: player1 … player4 / demo-pass</p><form method="post" action="/login"><input name="username" required placeholder="Username"><input name="password" type="password" required placeholder="Password"><input type="hidden" name="_csrf" id="csrf"><button disabled>Login</button></form><p id="error"></p><script>fetch('/api/csrf').then(r=>r.json()).then(t=>{document.querySelector('#csrf').value=t.token;document.querySelector('button').disabled=false;}).catch(()=>document.querySelector('#error').textContent='Cannot load login token');if(location.search.includes('error'))document.querySelector('#error').textContent='Invalid credentials';</script></html>
+<!DOCTYPE html>
+<html lang="el"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"><title>EscapeHub — Login</title>
+<style>body{font:18px system-ui;background:#121212;color:#eee;max-width:450px;margin:80px auto;padding:20px}input,button{box-sizing:border-box;width:100%;padding:12px;margin:8px 0;font:inherit}.msg-error{color:#ff8080}.msg-success{color:#63e6be}</style></head>
+<body><h1>EscapeHub</h1><p>Δημιούργησε λογαριασμό και μετά συνδέσου.</p>
+<form id="loginForm" data-next-page="/profile.html">
+<label for="username">Username</label><input id="username" autocomplete="username" required maxlength="80">
+<label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required minlength="4">
+<button type="submit">Σύνδεση</button><button type="button" id="registerBtn">Εγγραφή</button></form>
+<div id="authMessage" role="status"></div><script src="/apiClient.js"></script><script src="/auth.js"></script></body></html>

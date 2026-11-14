@@ -4,32 +4,29 @@ import gr.ihu.escapehub.profile.dto.UpdateProfileDto;
 import gr.ihu.escapehub.profile.entity.Profile;
 import gr.ihu.escapehub.profile.repository.ProfileRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProfileService {
     private final ProfileRepository profileRepository;
+    public ProfileService(ProfileRepository profileRepository) { this.profileRepository = profileRepository; }
 
-    public ProfileService(ProfileRepository profileRepository) {
-        this.profileRepository = profileRepository;
+    @Transactional
+    public Profile getProfile(String username) {
+        return profileRepository.findByOwnerUsername(username).orElseGet(() -> {
+            Profile profile = new Profile();
+            profile.setOwnerUsername(username);
+            profile.setNickname(username);
+            profile.setAvatarColor("Red");
+            return profileRepository.save(profile);
+        });
     }
 
-    public Profile getProfile(Long userId) {
-        /*
-        Όταν ο φίλος σου ανεβάσει το User entity, ο κώδικας θα είναι κάπως έτσι:
-        User user = userRepository.findById(userId).orElseThrow();
-        return profileRepository.findByUser(user).orElseThrow();
-        */
-
-        // Προσωρινός κώδικας για να μην χτυπάει μέχρι να μπει το User
-        return profileRepository.findById(userId).orElseThrow(() -> new RuntimeException("Profile not found"));
-    }
-
-    public Profile updateProfile(Long userId, UpdateProfileDto request) {
-        Profile profile = getProfile(userId);
-
-        profile.setNickname(request.getNickname());
+    @Transactional
+    public Profile updateProfile(String username, UpdateProfileDto request) {
+        Profile profile = getProfile(username);
+        profile.setNickname(request.getNickname().trim());
         profile.setAvatarColor(request.getAvatarColor());
-
         return profileRepository.save(profile);
     }
 }

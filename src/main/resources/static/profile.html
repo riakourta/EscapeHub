@@ -1,1 +1,35 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Player profile</title><style>body{font:18px system-ui;background:#101827;color:#eef;margin:40px auto;max-width:900px;padding:20px}button,input{font:inherit;padding:10px;margin:8px}a{color:#63e6be}canvas{max-width:100%;border:2px solid #64748b}</style><h1>Player profile</h1><p id="name"></p><p>Demo identity. Persistent nickname/avatar editing awaits the team's User entity.</p><a href="/lobby.html">Continue to lobby</a><script>fetch('/api/me').then(r=>r.json()).then(p=>document.querySelector('#name').textContent=p.username);</script></html>
+
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <title>EscapeHub - Προφίλ Παίκτη</title>
+    <style>
+        body { background-color: #121212; color: #f0f0f0; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background-color: #1e1e1e; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); width: 340px; text-align: center; border: 1px solid #333; }
+        input, select { width: 95%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; background: #2c2c2c; color: #fff; }
+        button { width: 95%; padding: 12px; margin-top: 15px; border: none; border-radius: 5px; background-color: #2a9d8f; color: white; font-weight: bold; cursor: pointer; }
+        .msg-error { color: #ff4d4d; margin-top: 15px; font-size: 0.9em; min-height: 20px; }
+        .msg-success { color: #4dff88; margin-top: 15px; font-size: 0.9em; min-height: 20px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>Προφίλ Παίκτη</h2>
+    <p>Ρύθμιση στοιχείων πριν την είσοδο στο Lobby</p>
+    <form id="profileForm" data-auth-page="/login.html" data-next-page="/lobby.html">
+        <label for="nickname">Ψευδώνυμο (Nickname):</label>
+        <input type="text" id="nickname" placeholder="Εισάγετε ψευδώνυμο" />
+
+        <label for="avatarColor">Χρώμα Χαρακτήρα:</label>
+        <select id="avatarColor"><option>Red</option><option>Blue</option><option>Green</option><option>Yellow</option></select>
+
+        <button type="submit">Αποθήκευση & Είσοδος στο Lobby</button>
+    </form>
+    <div id="profileMessage"></div>
+</div>
+
+<script src="apiClient.js"></script>
+<script src="auth.js"></script>
+</body>
+</html>

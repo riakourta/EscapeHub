@@ -9,6 +9,12 @@ public class Profile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
+    @Column(unique = true)
+    private String ownerUsername;
+
+    public String getOwnerUsername() { return ownerUsername; }
+    public void setOwnerUsername(String value) { ownerUsername = value; }
+
     private String nickname;
     private String avatarColor;
 

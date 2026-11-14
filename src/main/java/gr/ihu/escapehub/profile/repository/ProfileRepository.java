@@ -8,6 +8,8 @@ import java.util.Optional;
 @Repository
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
 
+    Optional<Profile> findByOwnerUsername(String ownerUsername);
+
     // Όταν ξεσχολιάσεις τον User στο Profile.java, θα ξεσχολιάσεις κι αυτό:
     // Optional<Profile> findByUser(User user);
 
