@@ -1,104 +1,66 @@
-# EscapeHub — movement and integration demo
+# EscapeHub — team museum integration
 
-## Run locally
+Run `docker compose up --build`, then open http://localhost:8080/login.html.
+Compose activates `integrated` mode and PostgreSQL. Register separate accounts,
+log in, save a nickname/color, select an avatar in the team's lobby, then start
+with exactly four authenticated players. All browsers navigate to the team's
+museum renderer, with a short entry intro before enabling local controls.
 
-Install Docker Engine/Desktop with Compose v2, then run from this directory:
+Login retains the team's registration/BCrypt/JWT response. For this browser flow,
+login also establishes an HttpOnly session, used by APIs and the two WebSockets.
+Bearer-only JWT verification is not implemented. Mutating HTTP requests use CSRF
+tokens obtained by apiClient.js. Tokens are not passed in WebSocket URLs.
 
-```sh
-docker compose up --build
+`/ws/lobby` preserves the team's JOIN_LOBBY / START_HEIST protocol and UI. The
+server derives account identity from the authenticated Principal. Avatar/name
+selection is presentation data. The four-member roster survives navigation to
+`museum.html`; `/ws/game` admits only those members. Both sockets are same-origin.
+
+`playerMovement.js` retains the team's collision/movement logic. `gameRenderer.js`
+retains the flashlight, exhibits, panic effects and alarm modal, and adds remote
+players via an adapter. `museumNetwork.js` connects the adapter to `gameSocket.js`.
+The server uses the same 800×600 room bounds and exhibit geometry, and triggers a
+shared alarm when a member reaches the sword. Late arrivals receive alarm state.
+This is destination collision validation, not authoritative speed/path simulation.
+
+Room state is in memory on one backend instance. Duplicate account connections
+and unadmitted players are rejected. A disconnected member disappears; rejoining
+an active match through the lobby restores entry, with its initial spawn rather
+than a saved position. After the last museum socket closes, the room resets.
+Use four separate browser profiles/modes; tabs sharing login cookies are not four
+independent accounts. Subsequent wings, puzzles and door transitions are not
+implemented by this integration; the supplied team renderer contains one room.
+
+## Checks
+
 ```
-
-Open http://localhost:8080/login.html. The compose file activates **demo** mode.
-Four local-only accounts: `player1`, `player2`, `player3`, `player4`; password for
-all accounts: `demo-pass`. Do not expose this demo deployment publicly.
-PostgreSQL is persisted in `postgres_data`. Stop with `docker compose down`.
-
-## Four-player manual QA (not executed in the delivery environment)
-
-1. Use four independent browser profiles/containers (ordinary tabs and incognito
-   windows within the same browser mode can share login cookies).
-2. Log each profile in with a different account. Confirm its name on Profile.
-3. Continue to Lobby and click Ready on each client. Before all four are ready,
-   the intro must remain hidden. All four should then see Intro.
-4. Click Enter museum on each client. Four labelled circles should appear.
-5. Move each player using arrow keys. Its movement must appear on the other three
-   clients; movement remains inside the 800×500 canvas.
-6. Close one client: its circle must disappear. Reload/rejoin it and confirm the
-   current positions appear. A started room permits rejoining; the room resets
-   when everyone leaves.
-7. Try connecting the same user twice or a fifth user: connection is rejected.
-8. Confirm a logged-out client cannot connect to `/ws/game`.
-
-## Protocol and renderer integration
-
-`gameSocket.js` exports `connectGame(callbacks)`, returning `ready()`, `move(x,y)`
-and `close()`. Callback contracts:
-
-- `onWelcome(id)` supplies the authenticated player ID.
-- `onSnapshot(players)` replaces room state; each player has `id,x,y,ready`.
-- `onMove({type,id,x,y})` updates a remote player.
-- `onStart()` enables the intro. It can fire again; consumers must be idempotent.
-- `onStatus(text)` reports errors/disconnection.
-
-Client frames are `{"type":"ready"}` and `{"type":"move","x":120,"y":140}`.
-Identity is taken from Spring Security's Principal, never a client-supplied ID.
-The `/ws/game` endpoint is same-origin and requires an authenticated session.
-Coordinates must be finite numbers inside x=12..788, y=12..488. The sample
-renderer sends at most 20 movement frames per second. Server validation bounds
-coordinates but does not implement authoritative physics, collision or speed checks.
-
-This delivery provides one museum room, up to four distinct users, on one backend
-instance. Room state is in memory. Multi-room matchmaking, shared state between
-instances, reconnect backoff, and game objectives are outside this implementation.
-
-## Integration boundary
-
-The uploaded source had empty authentication, WebSocket, HTML, JS and deployment
-files. This implementation therefore includes a **demo-only** Spring Security
-configuration and a minimal renderer. The profile page displays authenticated
-identity; it is not a completed persistent profile editor. The existing profile
-REST controller still uses temporary ID 1 and must be connected to the team's User
-entity before production. No claim is made that absent team code was integrated.
-
-Replace demo authentication with the team's security configuration, preserving
-an authenticated Principal on the WebSocket handshake. Connect the final renderer
-through the callbacks above. The current Lobby → Intro → Museum stays within one
-page to preserve the same connection. `museum.html` routes through this lobby.
-The existing `apiClient.js` and `lobbySocket.js` remain placeholders and are unused.
-
-## Build and CI
-
-```sh
 bash mvnw -B verify
+node src/main/resources/static/UI_Tests.js
+node --test scripts/frontend.test.cjs
 ```
 
-CI runs build, JUnit tests, Checkstyle, Compose validation and image build on pushes
-and pull requests. Tests use H2; PostgreSQL behavior needs the Docker QA above.
-Checkstyle currently checks the auth/lobby/movement packages for wildcard imports,
-empty statements and tabs. This is a limited initial ruleset, not a full audit.
-The pipeline does not publish or deploy images; deployment credentials/target were
-not supplied.
+CI runs these checks, Compose validation and image build. Tests use H2; the manual
+Docker check uses PostgreSQL. Checkstyle is a limited initial ruleset scoped to
+auth/lobby/movement. Deployment publishing and GitHub main protection require
+separate repository configuration. Keep the integration PR in draft until reviewed.
 
-## Git collaboration and main protection
+## Manual four-player QA
 
-Create a feature branch, commit the changes, push it and open a PR into `main`.
-The delivery environment could not access `riakourta/EscapeHub` (GitHub 404), so
-nothing was pushed and repository settings were not changed.
+1. Rebuild Compose. In four separate browser sessions register/log in as distinct
+   accounts, save profiles, and open the lobby. Before four players, start must fail.
+2. After the fourth joins, click START THE ROBBERY once. All four must reach the
+   museum entry intro and display the team's flashlight room after entry.
+3. Move each player; its avatar/name must update in every other client. Walls and
+   exhibits must prevent ordinary local movement.
+4. Approach the sword from below. All clients must receive the alarm effects and
+   alarm modal. Click Continue on each client and verify movement resumes.
+5. Close one museum window: its avatar must disappear. Rejoin through the lobby
+   and confirm the alarm state persists while another player remains connected.
+6. Close all museum windows, then return to the lobby to start a fresh game.
 
-A repository administrator must open Settings → Branches → Add branch protection
-rule (or Rulesets), target `main`, require a pull request with at least one approval,
-dismiss stale approvals, require conversation resolution, and require the
-`build-test-analysis` check after its first successful run. Disable force pushes
-and branch deletion. Confirm the rule applies to the intended contributors.
-
-## Verification record
-
-- JavaScript module syntax, frontend socket protocol assertions (callbacks, messages, closed socket), XML parsing and ZIP integrity: checked locally.
-- `bash mvnw -B verify`: attempted, blocked before compilation by DNS/network access
-  to `repo.maven.apache.org` (Spring Boot parent POM could not be downloaded).
-- Docker build/Compose execution: not run; Docker unavailable here.
-- Four-browser QA: not run; requires the running backend.
-- GitHub Actions and branch protection: not executed/activated remotely.
-
-Do not treat this package as a verified production release until the above build
-and four-player checklist pass in your team's environment.
+Verification in the delivery environment: six existing UI assertions and three
+Node test groups passed (movement/collision, renderer adapter/shared alarm,
+socket protocol). JS syntax, XML and archive structure checked. Java build was
+not run to completion because Maven Central dependencies are unavailable here.
+The new Java lobby/movement tests and Docker four-browser QA must pass locally.
+Previous successful CI runs refer to the earlier integration, not this revision.

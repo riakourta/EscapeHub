@@ -12,6 +12,11 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node src/main/resources/static/UI_Tests.js
+      - run: node --test scripts/frontend.test.cjs
       - run: bash mvnw -B verify
       - run: docker compose config --quiet
       - run: docker build -t escapehub:ci .
