@@ -28,7 +28,6 @@
             overflow: hidden;
         }
 
-        /* Το κόκκινο φόντο που αναβοσβήνει σαν Συναγερμός */
         body::before {
             content: '';
             position: fixed;
@@ -47,16 +46,6 @@
         @keyframes warningSiren {
             0%, 100% { opacity: 0.25; }
             50% { opacity: 1; }
-        }
-
-        .top-caption {
-            color: #8b949e;
-            font-size: 0.9rem;
-            margin-bottom: 14px;
-            letter-spacing: 0.3px;
-            text-align: center;
-            position: relative;
-            z-index: 1;
         }
 
         .lobby-box {
@@ -100,98 +89,14 @@
             margin: 0 0 18px 0;
         }
 
-        /* --- ΕΠΙΛΟΓΗ ΧΡΩΜΑΤΟΣ ΠΑΙΚΤΗ (ΑΝΘΡΩΠΑΚΙΑ) --- */
-        .avatar-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
+        /* Χρώματα παικτών */
+        .theme-blue { background-color: rgba(14, 165, 233, 0.22); border-color: #38bdf8; color: #38bdf8; }
+        .theme-pink { background-color: rgba(236, 72, 153, 0.22); border-color: #f472b6; color: #f472b6; }
+        .theme-purple { background-color: rgba(168, 85, 247, 0.22); border-color: #c084fc; color: #c084fc; }
+        .theme-green { background-color: rgba(16, 185, 129, 0.22); border-color: #34d399; color: #34d399; }
+        .theme-yellow { background-color: rgba(234, 179, 8, 0.22); border-color: #facc15; color: #facc15; }
+        .theme-red { background-color: rgba(239, 68, 68, 0.22); border-color: #f87171; color: #f87171; }
 
-        .avatar-option {
-            background-color: #181512;
-            border: 1px solid #4a3b24;
-            border-radius: 4px;
-            padding: 12px 6px;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.18s ease;
-            color: #9ca3af;
-        }
-
-        .avatar-option:hover {
-            border-color: #85683a;
-            background-color: #211c17;
-            transform: translateY(-2px);
-        }
-
-        .avatar-option.selected {
-            background-color: #262019;
-            border-color: #eab308;
-            box-shadow: 0 0 12px rgba(234, 179, 8, 0.25);
-        }
-
-        .avatar-icon-circle {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid transparent;
-        }
-
-        .avatar-icon-circle svg {
-            width: 24px;
-            height: 24px;
-            fill: currentColor;
-        }
-
-        /* Το όνομα του παίκτη κάτω από το ανθρωπάκι */
-        .avatar-owner-name {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #6b7280;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .avatar-option.taken .avatar-owner-name {
-            color: #f3f4f6;
-        }
-
-        /* Τα 4 Χρώματα: Μπλε, Ροζ, Μοβ, Πράσινο */
-        .theme-blue {
-            background-color: rgba(14, 165, 233, 0.22);
-            border-color: #38bdf8;
-            color: #38bdf8;
-            box-shadow: 0 0 10px rgba(56, 189, 248, 0.45);
-        }
-        .theme-pink {
-            background-color: rgba(236, 72, 153, 0.22);
-            border-color: #f472b6;
-            color: #f472b6;
-            box-shadow: 0 0 10px rgba(244, 114, 182, 0.45);
-        }
-        .theme-purple {
-            background-color: rgba(168, 85, 247, 0.22);
-            border-color: #c084fc;
-            color: #c084fc;
-            box-shadow: 0 0 10px rgba(192, 132, 252, 0.45);
-        }
-        .theme-green {
-            background-color: rgba(16, 185, 129, 0.22);
-            border-color: #34d399;
-            color: #34d399;
-            box-shadow: 0 0 10px rgba(52, 211, 153, 0.45);
-        }
-
-        /* Μετρητής */
         .counter {
             display: inline-block;
             background-color: #211c17;
@@ -201,7 +106,7 @@
             font-weight: 600;
             padding: 6px 18px;
             border-radius: 4px;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
 
         .counter span {
@@ -209,7 +114,6 @@
             font-weight: 700;
         }
 
-        /* Λίστα Παικτών */
         ul#playerList {
             list-style: none;
             padding: 0;
@@ -217,8 +121,8 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            min-height: 165px;
-            max-height: 200px;
+            min-height: 180px;
+            max-height: 260px;
             overflow-y: auto;
         }
 
@@ -266,7 +170,13 @@
             fill: currentColor;
         }
 
-        /* Κουμπί */
+        .actions-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
         button#startBtn {
             background-color: #990000;
             color: #ffffff;
@@ -285,34 +195,26 @@
             box-shadow: 0 0 15px rgba(220, 38, 38, 0.4);
         }
 
-        /* Μικρό διακριτικό κουμπί Exit */
-.actions-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
+        button#exitBtn {
+            background-color: transparent;
+            color: #9ca3af;
+            border: 1px solid #374151;
+            outline: none;
+            padding: 6px 22px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
 
-button#exitBtn {
-    background-color: transparent;
-    color: #9ca3af;
-    border: 1px solid #374151;
-    outline: none;
-    padding: 6px 22px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-button#exitBtn:hover {
-    color: #f3f4f6;
-    border-color: #6b7280;
-    background-color: rgba(255, 255, 255, 0.05);
-}
+        button#exitBtn:hover {
+            color: #f3f4f6;
+            border-color: #6b7280;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
 
         .status-msg {
             margin-top: 14px;
@@ -330,47 +232,15 @@ button#exitBtn:hover {
      class="lobby-box"
      data-ws-endpoint="/ws/lobby"
      data-next-page="museum.html"
-
-     data-empty-slot-text="Available"
-     data-error-template="Απαιτούνται τουλάχιστον {required} ληστές για την έναρξη! (Συνδεδεμένοι: {count}/{required})"
-     data-starting-text="Η ομάδα συμπληρώθηκε! Είσοδος στην Κεντρική Αίθουσα...">
+     data-exit-page="profile.html"
+     data-max-players="6"
+     data-error-template="Απαιτούνται τουλάχιστον {required} ληστές για την έναρξη! (Συνδεδεμένοι: {count}/{max})"
+     data-starting-text="READY">
 
     <h2>LOBBY</h2>
-    <p class="subtitle">Επιλέξτε το χρώμα του παίκτη σας και περιμένετε την υπόλοιπη ομάδα.</p>
-
-    <!-- Τα 4 Ανθρωπάκια (Μπλε, Ροζ, Μοβ, Πράσινο) -->
-    <div class="avatar-grid" id="avatarSelector">
-        <button type="button" class="avatar-option selected" data-avatar="blue">
-            <div class="avatar-icon-circle theme-blue">
-                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            </div>
-            <span class="avatar-owner-name">Available</span>
-        </button>
-
-        <button type="button" class="avatar-option" data-avatar="pink">
-            <div class="avatar-icon-circle theme-pink">
-                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            </div>
-            <span class="avatar-owner-name">Available</span>
-        </button>
-
-        <button type="button" class="avatar-option" data-avatar="purple">
-            <div class="avatar-icon-circle theme-purple">
-                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            </div>
-            <span class="avatar-owner-name">Available</span>
-        </button>
-
-        <button type="button" class="avatar-option" data-avatar="green">
-            <div class="avatar-icon-circle theme-green">
-                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            </div>
-            <span class="avatar-owner-name">Available</span>
-        </button>
-    </div>
 
     <div class="counter">
-        Συνδεδεμένοι Ληστές: <span id="currentCount">-</span> / <span id="requiredCount">-</span>
+        Συνδεδεμένοι Ληστές: <span id="currentCount">0</span> / <span id="maxCount">6</span>
     </div>
 
     <ul id="playerList"></ul>
@@ -382,6 +252,7 @@ button#exitBtn:hover {
     <div id="statusMsg" class="status-msg"></div>
 </div>
 
-<script src="lobbySocket.js"></script>
+<script src="apiClient.js"></script>
+<script src="js/lobbySocket.js"></script>
 </body>
 </html>
