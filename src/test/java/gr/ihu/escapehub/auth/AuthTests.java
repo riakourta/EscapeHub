@@ -5,6 +5,8 @@ import gr.ihu.escapehub.auth.dto.RegisterDto;
 import gr.ihu.escapehub.auth.entity.User;
 import gr.ihu.escapehub.auth.repository.UserRepository;
 import gr.ihu.escapehub.auth.service.AuthService;
+import gr.ihu.escapehub.profile.entity.Profile;
+import gr.ihu.escapehub.profile.repository.ProfileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,20 +18,18 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthTests {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ProfileRepository profileRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -44,13 +44,19 @@ class AuthTests {
     }
 
     @Test
-    void register_ShouldSaveUser_WhenUsernameDoesNotExist() {
+    void register_ShouldSaveUserAndDefaultProfile_WhenUsernameDoesNotExist() {
         RegisterDto dto = new RegisterDto("robber1", "secret123");
         when(userRepository.findByUsername("robber1")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User u = invocation.getArgument(0);
+            u.setId(1L);
+            return u;
+        });
 
         authService.register(dto);
 
         verify(userRepository, times(1)).save(any(User.class));
+        verify(profileRepository, times(1)).save(any(Profile.class));
     }
 
     @Test
@@ -61,21 +67,23 @@ class AuthTests {
 
         assertThrows(IllegalArgumentException.class, () -> authService.register(dto));
         verify(userRepository, never()).save(any(User.class));
+        verify(profileRepository, never()).save(any(Profile.class));
     }
 
     @Test
-    void login_ShouldReturnJwtToken_WhenCredentialsAreValid() {
+    void login_ShouldReturnJwtTokenAndExtractUserId_WhenCredentialsAreValid() {
         String rawPassword = "correctPassword";
         String hashedPassword = encoder.encode(rawPassword);
         User mockUser = new User("robber1", hashedPassword);
-        mockUser.setId(1L);
+        mockUser.setId(42L);
 
         when(userRepository.findByUsername("robber1")).thenReturn(Optional.of(mockUser));
 
         String token = authService.login(new LoginDto("robber1", rawPassword));
 
         assertNotNull(token);
-        assertTrue(token.split("\\.").length == 3);
+        assertEquals(3, token.split("\\.").length);
+        assertEquals(42L, authService.extractUserIdFromToken(token));
     }
 
     @Test

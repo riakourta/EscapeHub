@@ -1,8 +1,10 @@
 package gr.ihu.escapehub.profile.entity;
-
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import gr.ihu.escapehub.auth.entity.User;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "profiles")
 public class Profile {
 
     @Id
@@ -12,11 +14,17 @@ public class Profile {
     private String nickname;
     private String avatarColor;
 
-    /*
+
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
-     */
+    public Profile() {}
+
+    public Profile(User user, String nickname, String avatarColor) {
+        this.user = user;
+        this.nickname = nickname;
+        this.avatarColor = avatarColor;
+    }
 
     public Long getId() {return id;}
     public void setId(long id) {this.id = id;}
@@ -27,8 +35,7 @@ public class Profile {
     public String getAvatarColor() {return avatarColor;}
     public void setAvatarColor(String avatarColor) {this.avatarColor = avatarColor;}
 
-    /*
     public User getUser() {return user;}
     public void setUser(User user) {this.user = user;}
-     */
+
 }
