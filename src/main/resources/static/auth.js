@@ -18,7 +18,7 @@ function validateProfileInput(nickname, avatarColor) {
         return { valid: false, error: 'Nickname is required.' };
     }
     if (!avatarColor || avatarColor.trim() === '') {
-        return { valid: false, error: 'Avatar color selection is required.' };
+        return { valid: false, error: 'Please select a character color.' };
     }
     return { valid: true, error: null };
 }
@@ -89,7 +89,7 @@ function initLoginPage() {
 
             try {
                 const res = await apiClient.register(username.trim(), password);
-                renderStatusMessage(messageBox, res.message || 'Registration successful! You can now log in.', false);
+                renderStatusMessage(messageBox, res.message || 'Ο λογαριασμός δημιουργήθηκε! Μπορείτε να συνδεθείτε.', false);
             } catch (err) {
                 renderStatusMessage(messageBox, err.message, true);
             }
@@ -111,34 +111,46 @@ async function initProfilePage() {
     }
 
     const nicknameInput = document.getElementById('nickname');
-    const avatarColorSelect = document.getElementById('avatarColor');
+    const avatarColorInput = document.getElementById('avatarColor');
+    const colorCards = document.querySelectorAll('.color-card');
     const messageBox = document.getElementById('profileMessage');
+
+    function selectColorCard(colorValue) {
+        if (!colorValue) return;
+        const normalized = colorValue.toLowerCase();
+        avatarColorInput.value = normalized;
+        colorCards.forEach(card => {
+            card.classList.toggle('selected', card.dataset.color === normalized);
+        });
+    }
+
+    colorCards.forEach(card => {
+        card.addEventListener('click', () => {
+            selectColorCard(card.dataset.color);
+        });
+    });
+
+    const savedUsername = localStorage.getItem(API_CONFIG.STORAGE_KEYS.USERNAME);
+    const savedColor = localStorage.getItem(API_CONFIG.STORAGE_KEYS.AVATAR_COLOR);
+    if (savedUsername) nicknameInput.value = savedUsername;
+    if (savedColor) selectColorCard(savedColor);
 
     try {
         const existingProfile = await apiClient.getProfile();
         if (existingProfile && existingProfile.nickname) {
             nicknameInput.value = existingProfile.nickname;
         }
-        if (existingProfile && Array.isArray(existingProfile.availableColors) && existingProfile.availableColors.length > 0) {
-            avatarColorSelect.innerHTML = '';
-            existingProfile.availableColors.forEach(color => {
-                const opt = document.createElement('option');
-                opt.value = color;
-                opt.textContent = color;
-                avatarColorSelect.appendChild(opt);
-            });
-        }
         if (existingProfile && existingProfile.avatarColor) {
-            avatarColorSelect.value = existingProfile.avatarColor;
+            selectColorCard(existingProfile.avatarColor);
         }
     } catch (err) {
-        // Profile not initialized on server yet
+        // Το προφίλ θα δημιουργηθεί κατά την αποθήκευση
     }
 
     profileForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nickname = nicknameInput.value;
-        const avatarColor = avatarColorSelect.value;
+        const avatarColor = avatarColorInput.value;
 
         const check = validateProfileInput(nickname, avatarColor);
         if (!check.valid) {
@@ -146,10 +158,18 @@ async function initProfilePage() {
             return;
         }
 
+        const cleanNickname = nickname.trim();
+        const cleanColor = avatarColor.trim().toLowerCase();
+
         try {
-            const updated = await apiClient.updateProfile(nickname.trim(), avatarColor);
-            localStorage.setItem(API_CONFIG.STORAGE_KEYS.NICKNAME, (updated && updated.nickname) || nickname.trim());
-            localStorage.setItem(API_CONFIG.STORAGE_KEYS.AVATAR_COLOR, (updated && updated.avatarColor) || avatarColor);
+            const updated = await apiClient.updateProfile(cleanNickname, cleanColor);
+            const finalNickname = (updated && updated.nickname) || cleanNickname;
+            const finalColor = ((updated && updated.avatarColor) || cleanColor).toLowerCase();
+
+            localStorage.setItem(API_CONFIG.STORAGE_KEYS.USERNAME, finalNickname);
+            localStorage.setItem(API_CONFIG.STORAGE_KEYS.NICKNAME, finalNickname);
+            localStorage.setItem(API_CONFIG.STORAGE_KEYS.AVATAR_COLOR, finalColor);
+
             if (nextRoute) {
                 window.location.href = nextRoute;
             }
