@@ -15,6 +15,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final LobbyHandler lobbyHandler;
     private final MovementHandler movementHandler;
     private final String lobbyEndpoint;
+    private final String gameEndpoint;
     private final String[] allowedOrigins;
 
     public WebSocketConfig(
@@ -22,12 +23,15 @@ public class WebSocketConfig implements WebSocketConfigurer {
             MovementHandler movementHandler,
             @Value("${escapehub.websocket.lobby-endpoint:/ws/lobby}")
             String lobbyEndpoint,
+            @Value("${escapehub.websocket.game-endpoint:/ws/game}")
+            String gameEndpoint,
             @Value("${escapehub.websocket.allowed-origins:}")
             String[] allowedOrigins
     ) {
         this.lobbyHandler = lobbyHandler;
         this.movementHandler = movementHandler;
         this.lobbyEndpoint = lobbyEndpoint;
+        this.gameEndpoint = gameEndpoint;
         this.allowedOrigins = allowedOrigins;
     }
 
@@ -35,9 +39,16 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(
             WebSocketHandlerRegistry registry
     ) {
+        if (lobbyEndpoint.equals(gameEndpoint)) {
+            throw new IllegalStateException(
+                    "Lobby και παιχνίδι χρειάζονται διαφορετικά WebSocket endpoints."
+            );
+        }
+
         registry.addHandler(lobbyHandler, lobbyEndpoint)
                 .setAllowedOrigins(allowedOrigins);
 
-        registry.addHandler(movementHandler, "/ws/game");
+        registry.addHandler(movementHandler, gameEndpoint)
+                .setAllowedOrigins(allowedOrigins);
     }
 }

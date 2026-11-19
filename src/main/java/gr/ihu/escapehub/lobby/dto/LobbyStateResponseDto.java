@@ -8,5 +8,7 @@ public record LobbyStateResponseDto(
         MessageType type,
         int count,
         int required,
-        Collection<String> players
+        Integer maxPlayers,
+        Collection<String> players,
+        String reason
 ) {}
