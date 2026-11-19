@@ -3,9 +3,12 @@ package gr.ihu.escapehub.movement.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.ihu.escapehub.auth.entity.User;
+import gr.ihu.escapehub.exhibit.service.ExhibitService;
+import gr.ihu.escapehub.journal.service.JournalService;
 import gr.ihu.escapehub.movement.dto.PlayerState;
 import gr.ihu.escapehub.movement.service.MovementStateService;
 import gr.ihu.escapehub.movement.service.MovementTokenService;
+import gr.ihu.escapehub.puzzle.service.PuzzleService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -30,6 +33,9 @@ public class MovementHandler extends TextWebSocketHandler {
     private final ObjectMapper mapper;
     private final MovementStateService state;
     private final MovementTokenService tokens;
+    private final ExhibitService exhibits;
+    private final PuzzleService puzzles;
+    private final JournalService journal;
 
     private final Map<String, WebSocketSession> sessions =
             new LinkedHashMap<>();
@@ -40,11 +46,17 @@ public class MovementHandler extends TextWebSocketHandler {
     public MovementHandler(
             ObjectMapper mapper,
             MovementStateService state,
-            MovementTokenService tokens
+            MovementTokenService tokens,
+            ExhibitService exhibits,
+            PuzzleService puzzles,
+            JournalService journal
     ) {
         this.mapper = mapper;
         this.state = state;
         this.tokens = tokens;
+        this.exhibits = exhibits;
+        this.puzzles = puzzles;
+        this.journal = journal;
     }
 
     @Override
@@ -85,6 +97,8 @@ public class MovementHandler extends TextWebSocketHandler {
 
         if ("move".equals(type)) {
             move(session, event);
+        } else if ("collect".equals(type)) {
+            collect(session, event);
         } else {
             error(session, "UNKNOWN_TYPE", "Άγνωστος τύπος μηνύματος.");
         }
@@ -147,6 +161,7 @@ public class MovementHandler extends TextWebSocketHandler {
                 "player", player
         ));
 
+        updatePuzzle();
         broadcastSnapshot();
     }
 
@@ -159,26 +174,37 @@ public class MovementHandler extends TextWebSocketHandler {
         String direction = event.path("direction").asText();
 
         if (!xNode.isNumber() || !yNode.isNumber()) {
-            error(session, "INVALID_POSITION", "Τα x και y πρέπει να είναι αριθμοί.");
+            error(
+                    session,
+                    "INVALID_POSITION",
+                    "Τα x και y πρέπει να είναι αριθμοί."
+            );
             return;
         }
 
         double x = xNode.asDouble();
         double y = yNode.asDouble();
 
-        // Όρια της υπάρχουσας αίθουσας 800×600, με χαρακτήρα 30px.
+        // Αίθουσα 800×600, τοίχοι 20px και χαρακτήρας 30px.
         if (!Double.isFinite(x) || !Double.isFinite(y)
                 || x < 20 || x > 750
                 || y < 20 || y > 550
                 || !DIRECTIONS.contains(direction)) {
-            error(session, "INVALID_MOVEMENT", "Μη έγκυρη θέση ή κατεύθυνση.");
+            error(
+                    session,
+                    "INVALID_MOVEMENT",
+                    "Μη έγκυρη θέση ή κατεύθυνση."
+            );
             return;
         }
 
         String playerId = playerIds.get(session.getId());
 
         PlayerState updated = state.updatePosition(
-                playerId, x, y, direction
+                playerId,
+                x,
+                y,
+                direction
         );
 
         Map<String, Object> response = Map.of(
@@ -190,6 +216,81 @@ public class MovementHandler extends TextWebSocketHandler {
             if (!peer.getId().equals(session.getId())) {
                 sendSafely(peer, response);
             }
+        }
+
+        updatePuzzle();
+    }
+
+    private void collect(
+            WebSocketSession session,
+            JsonNode event
+    ) throws IOException {
+        JsonNode exhibitId = event.path("exhibitId");
+
+        if (!exhibitId.isTextual() || exhibitId.asText().isBlank()) {
+            error(session, "INVALID_EXHIBIT", "Απαιτείται exhibitId.");
+            return;
+        }
+
+        String playerId = playerIds.get(session.getId());
+        PlayerState player = state.findPlayer(playerId).orElse(null);
+
+        try {
+            var collected = exhibits.collect(exhibitId.asText(), player);
+
+            journal.recordExhibit(collected.id(), collected.label());
+
+            Map<String, Object> response = Map.of(
+                    "type", "exhibit_collected",
+                    "exhibit", collected
+            );
+
+            for (WebSocketSession peer : List.copyOf(sessions.values())) {
+                sendSafely(peer, response);
+            }
+
+            broadcastJournal();
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            error(session, "COLLECT_REJECTED", exception.getMessage());
+        }
+    }
+
+    private void updatePuzzle() {
+        var previous = puzzles.getState();
+        var updated = puzzles.evaluate(state.getPlayers());
+
+        boolean newlySolved = !previous.solved() && updated.solved();
+
+        if (newlySolved) {
+            journal.recordPuzzle(updated.id(), updated.label());
+        }
+
+        if (previous.equals(updated)) {
+            return;
+        }
+
+        Map<String, Object> response = Map.of(
+                "type", "puzzle_state",
+                "puzzle", updated
+        );
+
+        for (WebSocketSession peer : List.copyOf(sessions.values())) {
+            sendSafely(peer, response);
+        }
+
+        if (newlySolved) {
+            broadcastJournal();
+        }
+    }
+
+    private void broadcastJournal() {
+        Map<String, Object> response = Map.of(
+                "type", "journal_state",
+                "entries", journal.getEntries()
+        );
+
+        for (WebSocketSession peer : List.copyOf(sessions.values())) {
+            sendSafely(peer, response);
         }
     }
 
@@ -203,6 +304,7 @@ public class MovementHandler extends TextWebSocketHandler {
 
         if (playerId != null) {
             state.removePlayer(playerId);
+            updatePuzzle();
             broadcastSnapshot();
         }
     }
@@ -210,7 +312,10 @@ public class MovementHandler extends TextWebSocketHandler {
     private void broadcastSnapshot() {
         Map<String, Object> response = Map.of(
                 "type", "snapshot",
-                "players", state.getPlayers()
+                "players", state.getPlayers(),
+                "exhibits", exhibits.getExhibits(),
+                "puzzle", puzzles.getState(),
+                "journal", journal.getEntries()
         );
 
         for (WebSocketSession session : List.copyOf(sessions.values())) {

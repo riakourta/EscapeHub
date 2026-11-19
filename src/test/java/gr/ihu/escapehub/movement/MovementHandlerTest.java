@@ -2,9 +2,12 @@ package gr.ihu.escapehub.movement;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.ihu.escapehub.auth.entity.User;
+import gr.ihu.escapehub.exhibit.service.ExhibitService;
+import gr.ihu.escapehub.journal.service.JournalService;
 import gr.ihu.escapehub.movement.handler.MovementHandler;
 import gr.ihu.escapehub.movement.service.MovementStateService;
 import gr.ihu.escapehub.movement.service.MovementTokenService;
+import gr.ihu.escapehub.puzzle.service.PuzzleService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.web.socket.CloseStatus;
@@ -17,12 +20,30 @@ import static org.mockito.Mockito.*;
 class MovementHandlerTest {
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final MovementStateService state = new MovementStateService();
+
+    private final MovementStateService state =
+            new MovementStateService();
+
     private final MovementTokenService tokens =
             mock(MovementTokenService.class);
 
-    private final MovementHandler handler =
-            new MovementHandler(mapper, state, tokens);
+    private final ExhibitService exhibits =
+            new ExhibitService();
+
+    private final PuzzleService puzzles =
+            new PuzzleService();
+
+    private final JournalService journal =
+            new JournalService();
+
+    private final MovementHandler handler = new MovementHandler(
+            mapper,
+            state,
+            tokens,
+            exhibits,
+            puzzles,
+            journal
+    );
 
     private WebSocketSession session(String id) {
         WebSocketSession session = mock(WebSocketSession.class);
@@ -41,10 +62,14 @@ class MovementHandlerTest {
 
         WebSocketSession session = session(String.valueOf(id));
 
-        handler.handleMessage(session, new TextMessage(
-                "{\"type\":\"join\",\"token\":\"token" + id
-                        + "\",\"nickname\":\"Player\",\"color\":\"blue\"}"
-        ));
+        handler.handleMessage(
+                session,
+                new TextMessage(
+                        "{\"type\":\"join\",\"token\":\"token" + id
+                                + "\",\"nickname\":\"Player\","
+                                + "\"color\":\"blue\"}"
+                )
+        );
 
         return session;
     }
@@ -56,17 +81,18 @@ class MovementHandlerTest {
 
         clearInvocations(first, second);
 
-        handler.handleMessage(first, new TextMessage(
-                """
-                {
-                  "type": "move",
-                  "id": "fake-id",
-                  "x": 120,
-                  "y": 500,
-                  "direction": "right"
-                }
-                """
-        ));
+        handler.handleMessage(
+                first,
+                new TextMessage("""
+                        {
+                          "type": "move",
+                          "id": "fake-id",
+                          "x": 120,
+                          "y": 500,
+                          "direction": "right"
+                        }
+                        """)
+        );
 
         ArgumentCaptor<TextMessage> messages =
                 ArgumentCaptor.forClass(TextMessage.class);
@@ -79,24 +105,33 @@ class MovementHandlerTest {
         );
 
         assertEquals("move", response.path("type").asText());
-        assertEquals("1", response.path("player").path("id").asText());
-        assertEquals(120.0, response.path("player").path("x").asDouble());
+
+        assertEquals(
+                "1",
+                response.path("player").path("id").asText()
+        );
+
+        assertEquals(
+                120.0,
+                response.path("player").path("x").asDouble()
+        );
     }
 
     @Test
     void rejectsMovementBeforeJoin() throws Exception {
         WebSocketSession anonymous = session("anonymous");
 
-        handler.handleMessage(anonymous, new TextMessage(
-                """
-                {
-                  "type": "move",
-                  "x": 120,
-                  "y": 500,
-                  "direction": "right"
-                }
-                """
-        ));
+        handler.handleMessage(
+                anonymous,
+                new TextMessage("""
+                        {
+                          "type": "move",
+                          "x": 120,
+                          "y": 500,
+                          "direction": "right"
+                        }
+                        """)
+        );
 
         ArgumentCaptor<TextMessage> messages =
                 ArgumentCaptor.forClass(TextMessage.class);
@@ -138,6 +173,10 @@ class MovementHandlerTest {
 
         assertEquals("snapshot", response.path("type").asText());
         assertEquals(1, response.path("players").size());
-        assertEquals("2", response.path("players").get(0).path("id").asText());
+
+        assertEquals(
+                "2",
+                response.path("players").get(0).path("id").asText()
+        );
     }
 }
