@@ -2,29 +2,193 @@
 <html lang="el">
 <head>
     <meta charset="UTF-8">
-    <title>EscapeHub - Προφίλ Παίκτη</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EscapeHub - Προφίλ Ληστή</title>
     <style>
-        body { background-color: #121212; color: #f0f0f0; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background-color: #1e1e1e; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); width: 340px; text-align: center; border: 1px solid #333; }
-        input, select { width: 95%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #444; background: #2c2c2c; color: #fff; }
-        button { width: 95%; padding: 12px; margin-top: 15px; border: none; border-radius: 5px; background-color: #2a9d8f; color: white; font-weight: bold; cursor: pointer; }
-        .msg-error { color: #ff4d4d; margin-top: 15px; font-size: 0.9em; min-height: 20px; }
-        .msg-success { color: #4dff88; margin-top: 15px; font-size: 0.9em; min-height: 20px; }
+        * { box-sizing: border-box; }
+        body {
+            background-color: #080a0f;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+            background-size: 36px 36px;
+            color: #d1d5db;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .profile-box {
+            background-color: #0f1218;
+            border: 1px solid #7f1d1d;
+            border-radius: 6px;
+            padding: 32px 36px;
+            width: 100%;
+            max-width: 460px;
+            text-align: center;
+            box-shadow: 0 0 25px rgba(180, 20, 20, 0.2), 0 20px 50px rgba(0, 0, 0, 0.85);
+        }
+        h2 {
+            color: #ef4444;
+            font-size: 1.6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 6px 0;
+            text-shadow: 0 0 12px rgba(239, 68, 68, 0.35);
+        }
+        .subtitle {
+            color: #9ca3af;
+            font-size: 0.88rem;
+            margin: 0 0 22px 0;
+        }
+        .form-group {
+            text-align: left;
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: #e5e7eb;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 11px 12px;
+            border-radius: 4px;
+            border: 1px solid #4a3b24;
+            background-color: #181512;
+            color: #f3f4f6;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+        input[type="text"]:focus {
+            border-color: #eab308;
+        }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .color-card {
+            background-color: #181512;
+            border: 1px solid #4a3b24;
+            border-radius: 5px;
+            padding: 12px 8px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #9ca3af;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.16s ease;
+        }
+        .color-card:hover {
+            border-color: #85683a;
+            background-color: #211c17;
+            transform: translateY(-2px);
+        }
+        .color-card.selected {
+            background-color: #262019;
+            border-color: #eab308;
+            color: #f3f4f6;
+            box-shadow: 0 0 12px rgba(234, 179, 8, 0.28);
+        }
+        .color-dot {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid;
+        }
+        .color-dot svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        .theme-blue { background-color: rgba(14, 165, 233, 0.22); border-color: #38bdf8; color: #38bdf8; }
+        .theme-pink { background-color: rgba(236, 72, 153, 0.22); border-color: #f472b6; color: #f472b6; }
+        .theme-purple { background-color: rgba(168, 85, 247, 0.22); border-color: #c084fc; color: #c084fc; }
+        .theme-green { background-color: rgba(16, 185, 129, 0.22); border-color: #34d399; color: #34d399; }
+        .theme-red { background-color: rgba(239, 68, 68, 0.22); border-color: #f87171; color: #f87171; }
+        .theme-yellow { background-color: rgba(234, 179, 8, 0.22); border-color: #facc15; color: #facc15; }
+
+        button#continueLobbyBtn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            background-color: #990000;
+            color: #ffffff;
+            border: 1px solid #b91c1c;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        button#continueLobbyBtn:hover {
+            background-color: #b30000;
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.4);
+        }
+        .msg-error { color: #f87171; margin-top: 14px; font-size: 0.88rem; min-height: 20px; }
+        .msg-success { color: #34d399; margin-top: 14px; font-size: 0.88rem; min-height: 20px; }
     </style>
 </head>
 <body>
-<div class="card">
-    <h2>Προφίλ Παίκτη</h2>
-    <p>Ρύθμιση στοιχείων πριν την είσοδο στο Lobby</p>
-    <form id="profileForm">
-        <label for="nickname">Ψευδώνυμο (Nickname):</label>
-        <input type="text" id="nickname" placeholder="Εισάγετε ψευδώνυμο" />
+<div class="profile-box">
+    <h2>PROFILE ΛΗΣΤΗ</h2>
+    <p class="subtitle">Επίλεξε το ψευδώνυμο και το χρώμα σου πριν μπεις στο Lobby</p>
 
-        <label for="avatarColor">Χρώμα Χαρακτήρα:</label>
-        <select id="avatarColor"></select>
+    <form id="profileForm" data-auth-page="login.html" data-next-page="lobby.html">
+        <div class="form-group">
+            <label for="nickname">Ψευδώνυμο (Nickname)</label>
+            <input type="text" id="nickname" placeholder="Π.χ. ShadowFox" maxlength="20" />
+        </div>
 
-        <button type="submit">Αποθήκευση & Είσοδος στο Lobby</button>
+        <div class="form-group">
+            <label>Επιλογή Χρώματος Χαρακτήρα (6 Διαθέσιμα)</label>
+            <input type="hidden" id="avatarColor" value="" />
+
+            <div class="color-grid" id="colorGrid">
+                <button type="button" class="color-card" data-color="blue">
+                    <span class="color-dot theme-blue"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+                    <span>Μπλε</span>
+                </button>
+                <button type="button" class="color-card" data-color="pink">
+                    <span class="color-dot theme-pink"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+                    <span>Ροζ</span>
+                </button>
+                <button type="button" class="color-card" data-color="purple">
+                    <span class="color-dot theme-purple"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+                    <span>Μοβ</span>
+                </button>
+                <button type="button" class="color-card" data-color="green">
+                    <span class="color-dot theme-green"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+                    <span>Πράσινο</span>
+                </button>
+                <button type="button" class="color-card" data-color="red">
+                    <span class="color-dot theme-red"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+                    <span>Κόκκινο</span>
+                </button>
+                <button type="button" class="color-card" data-color="yellow">
+                    <span class="color-dot theme-yellow"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></span>
+                    <span>Κίτρινο</span>
+                </button>
+            </div>
+        </div>
+
+        <button type="submit" id="continueLobbyBtn">Συνέχεια στο Lobby</button>
     </form>
+
     <div id="profileMessage"></div>
 </div>
 
