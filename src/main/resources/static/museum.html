@@ -5,6 +5,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EscapeHub - Αίθουσα Α</title>
     <style>
+        .main-layout {
+            display: flex;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .sidebar {
+            width: 310px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .journal-panel, .chat-slot-panel {
+            background: #0d0d14;
+            border: 1px solid #262638;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .journal-panel {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .journal-panel h2, .chat-slot-panel h2 {
+            font-size: 0.95rem;
+            color: #e6c36a;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #1f1f2e;
+        }
+
+        #journal-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        #journal-list li {
+            background: #151522;
+            padding: 7px 9px;
+            border-left: 3px solid #00d2ff;
+            border-radius: 3px;
+            animation: fadeInEntry 0.3s ease;
+        }
+
+        @keyframes fadeInEntry {
+            from { opacity: 0; transform: translateX(8px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .chat-slot-panel {
+            height: 210px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-container {
+            flex: 1;
+            border: 1px dashed #2a2a3d;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            font-size: 0.82rem;
+        }
         * {
             box-sizing: border-box;
             margin: 0;
@@ -152,13 +223,7 @@
 <body>
 
 <!-- Intro Modal (Εμφανίζεται μετά την κλοπή του μπροστινού εκθέματος) -->
-<div id="intro-modal">
-    <div class="alarm-icon">🚨</div>
-    <div class="modal-box">
-        <h1>ΣΥΝΑΓΕΡΜΟΣ ΕΝΕΡΓΟΠΟΙΗΘΗΚΕ</h1>
-        <p>
-            Πήρατε το έργο τέχνης, αλλά ο συναγερμός ενεργοποιήθηκε...
-            Τα φώτα ασφαλείας άναψαν και η Κεντρική Πύλη της Πυραμίδας κλείδωσε!
+άναψαν και η Κεντρική Πύλη της Πυραμίδας κλείδωσε!
             Βρείτε την έξοδο προς την Πτέρυγα Sully!
         </p>
         <button id="start-btn">Συνέχεια</button>
@@ -166,16 +231,37 @@
 </div>
 
 <div class="hud" id="hud-text">
-    🔦 Κεντρική Αίθουσα Richelieu Wing | Πλησιάστε το έκθεμα μπροστά σας με τα βελάκια (⬆️ ⬇️ ⬅️ ➡️)
+    🔦 Κεντρική Αίθουσα Richelieu Wing | Πλησιάστε τα εκθέματα (⬆️ ⬇️ ⬅️ ➡️) & πατήστε <b>E</b>
 </div>
 
-<!-- Καμβάς Μουσείου & Εφέ Σκοταδιού -->
-<div id="game-wrapper">
-    <canvas id="museumCanvas" width="800" height="600"></canvas>
-    <div id="darkness" class="darkness-overlay"></div>
+<div class="main-layout">
+    <!-- Καμβάς Μουσείου & Εφέ Σκοταδιού -->
+    <div id="game-wrapper">
+        <canvas id="museumCanvas" width="800" height="600"></canvas>
+        <div id="darkness" class="darkness-overlay"></div>
+    </div>
+
+    <!-- Πλαϊνή Στήλη: Κοινό Ημερολόγιο (πάνω) & Chat (κάτω) -->
+    <aside class="sidebar">
+        <section class="journal-panel">
+            <h2>📜 Κοινό Ημερολόγιο</h2>
+            <ul id="journal-list">
+                <li>Είσοδος στην Πτέρυγα Richelieu.</li>
+            </ul>
+        </section>
+
+        <section class="chat-slot-panel">
+            <h2>💬 Chat Ομάδας</h2>
+            <div id="chat-container">
+                Χώρος Chat (Ελευθερία)
+            </div>
+        </section>
+    </aside>
 </div>
 
 <script src="js/playerMovement.js"></script>
 <script src="js/gameRenderer.js"></script>
+<script src="js/gameSocket.js"></script>
+<script src="js/gameSocket.js"></script>
 </body>
 </html>
