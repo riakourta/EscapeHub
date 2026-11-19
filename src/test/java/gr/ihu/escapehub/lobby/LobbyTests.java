@@ -1,5 +1,6 @@
 package gr.ihu.escapehub.lobby;
-
+import gr.ihu.escapehub.lobby.dto.LobbyMessageDto;
+import gr.ihu.escapehub.lobby.dto.MessageType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gr.ihu.escapehub.lobby.handler.LobbyHandler;
