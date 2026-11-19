@@ -9,10 +9,10 @@ const DEFAULT_CONFIG = {
         PROFILE: '/api/profile'
     },
     STORAGE_KEYS: {
-        TOKEN: 'jwt_token',
+        TOKEN: 'jwtToken',
         USERNAME: 'username',
-        NICKNAME: 'player_nickname',
-        AVATAR_COLOR: 'player_avatarColor'
+        NICKNAME: 'playerNickname',
+        AVATAR_COLOR: 'playerColor'
     }
 };
 
@@ -43,7 +43,7 @@ const apiClient = {
         const responseData = await response.json().catch(() => null);
 
         if (!response.ok) {
-            const errorMessage = (responseData && (responseData.message || responseData.error))
+            const errorMessage = (responseData && (responseData.error || responseData.message))
                 || response.statusText
                 || `HTTP Error ${response.status}`;
             throw new Error(errorMessage);

@@ -176,58 +176,146 @@ function renderGame() {
     const centerX = playerState.x + playerState.size / 2;
     const centerY = playerState.y + playerState.size / 2;
     const angle = getDirectionAngle(playerState.direction);
-    const beamLength = 230;
-    const spread = Math.PI / 4;
 
     ctx.clearRect(0, 0, width, height);
 
-    // ΣΤΡΩΣΗ 1: Σχεδίαση ολόκληρου του δωματίου σε βαθύ σκοτάδι (σχεδόν αόρατο)
-    drawRoomElements(false);
-
-    // ΣΤΡΩΣΗ 2: Αποκάλυψη του δωματίου ΜΟΝΟ μέσα στον κώνο του φακού και γύρω από τον παίκτη
-    ctx.save();
-    ctx.beginPath();
-    // Κώνος φακού μπροστά
-    ctx.moveTo(centerX, centerY);
-    ctx.arc(centerX, centerY, beamLength, angle - spread, angle + spread);
-    ctx.closePath();
-    // Μικρός κύκλος γύρω από τον παίκτη
-    ctx.arc(centerX, centerY, 42, 0, Math.PI * 2);
-    ctx.clip();
-
-    // Ζωγραφίζουμε τα φωτισμένα εκθέματα/πάτωμα μόνο μέσα στην περιοχή του φακού
+    // ΣΤΡΩΣΗ 1: Δωμάτιο φωτεινό στο υπόβαθρο
     drawRoomElements(true);
 
-    // Προσθήκη απαλής κιτρινωπής λάμψης του φακού
-    const coneGrad = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, beamLength);
-    coneGrad.addColorStop(0, 'rgba(255, 255, 200, 0.28)');
-    coneGrad.addColorStop(0.7, 'rgba(255, 255, 180, 0.08)');
-    coneGrad.addColorStop(1, 'rgba(0, 0, 0, 0.65)');
-    ctx.fillStyle = coneGrad;
+    // ΣΤΡΩΣΗ 2: Σκοτεινό πέπλο & ομαλός φακός ΜΟΝΟ μπροστά από τον παίκτη
+    let srcX = centerX;
+    let srcY = centerY;
+    const tipOffset = 12;
+    if (playerState.direction === 'up') srcY -= tipOffset;
+    else if (playerState.direction === 'down') srcY += tipOffset;
+    else if (playerState.direction === 'left') srcX -= tipOffset;
+    else if (playerState.direction === 'right') srcX += tipOffset;
+
+    const smoothBeamLength = 250;
+    const narrowSpread = Math.PI / 5;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(2, 2, 6, 0.97)';
     ctx.fillRect(0, 0, width, height);
+
+    ctx.globalCompositeOperation = 'destination-out';
+    const fadeGrad = ctx.createRadialGradient(srcX, srcY, 2, srcX, srcY, smoothBeamLength);
+    fadeGrad.addColorStop(0, 'rgba(0, 0, 0, 1)');
+    fadeGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.85)');
+    fadeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.beginPath();
+    ctx.moveTo(srcX, srcY);
+    ctx.arc(srcX, srcY, smoothBeamLength, angle - narrowSpread, angle + narrowSpread);
+    ctx.closePath();
+    ctx.fillStyle = fadeGrad;
+    ctx.fill();
     ctx.restore();
 
-    // ΣΤΡΩΣΗ 3: Σχεδίαση Παίκτη (Φωτεινός Κύκλος)
+    // ΣΤΡΩΣΗ 3: Πλάκες 2-Player Γρίφου & Ένδειξη [E] πάνω από κοντινό έκθεμα
+    if (roomConfig.coOpPuzzle) {
+        roomConfig.coOpPuzzle.plates.forEach(plate => {
+            const isLitPlate = plate.active || roomConfig.coOpPuzzle.solved;
+            ctx.fillStyle = isLitPlate ? 'rgba(0, 255, 136, 0.35)' : 'rgba(255, 180, 0, 0.18)';
+            ctx.fillRect(plate.x, plate.y, plate.width, plate.height);
+            ctx.strokeStyle = isLitPlate ? '#00ff88' : '#ffb400';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(plate.x, plate.y, plate.width, plate.height);
+        });
+    }
+
+    const nearby = typeof getNearbyExhibit === 'function' ? getNearbyExhibit() : null;
+    if (nearby && roomConfig.alarmTriggered) {
+        ctx.fillStyle = '#00d2ff';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('[E] Πάρε', nearby.x + nearby.width / 2, nearby.y - 8);
+    }
+
+    // ΣΤΡΩΣΗ 4: Συμπαίκτης (Πορτοκαλί) & Παίκτης (Γαλάζιος)
+    if (typeof teammateState !== 'undefined' && teammateState.visible) {
+        const tx = teammateState.x + teammateState.size / 2;
+        const ty = teammateState.y + teammateState.size / 2;
+        ctx.save();
+        ctx.shadowColor = '#ff9900';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#ff9900';
+        ctx.beginPath();
+        ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+    }
+
     ctx.save();
     ctx.shadowColor = '#00d2ff';
-    ctx.shadowBlur = 15;
-
+    ctx.shadowBlur = 12;
     ctx.fillStyle = '#00d2ff';
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 9, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
 }
 
-// Αρχικοποίηση χειρισμού και πρώτου render
-initPlayerControls(() => {
-    if (isPanicSequenceRunning) return;
+let isIntroAutoWalking = true;
+
+function runAutoHeistIntro() {
+    const target = roomConfig.obstacles.find(o => o.isTarget);
+    if (!target || roomConfig.alarmTriggered) {
+        isIntroAutoWalking = false;
+        renderGame();
+        return;
+    }
+
+    const goalY = target.y + target.height + 8;
+
+    const walkInterval = setInterval(() => {
+        if (playerState.y > goalY) {
+            playerState.y -= 4;
+            playerState.direction = 'up';
+            if (typeof teammateState !== 'undefined') {
+                teammateState.y -= 4;
+                teammateState.direction = 'up';
+            }
+            renderGame();
+        } else {
+            clearInterval(walkInterval);
+            isIntroAutoWalking = false;
+            if (typeof gameSocket !== 'undefined') {
+                gameSocket.logToJournal('🗡️ Κλάπηκε το Ξίφος του Καρλομάγνου! Χτύπησε συναγερμός!');
+            }
+            triggerAlarmSequence(target);
+        }
+    }, 55);
+}
+
+// Αρχικοποίηση χειρισμού, intro & πρώτου render
+initPlayerControls((state, moved, action, takenExhibit) => {
+    if (isPanicSequenceRunning || isIntroAutoWalking) return;
+
+    if ((action === 'Collect' || action === 'ClickCollect') && takenExhibit) {
+        if (typeof gameSocket !== 'undefined') {
+            gameSocket.sendExhibitCollected(takenExhibit);
+        }
+    } else if (moved) {
+        if (typeof gameSocket !== 'undefined') {
+            gameSocket.sendMove(state);
+        }
+        if (typeof checkCoOpPuzzle === 'function' && checkCoOpPuzzle()) {
+            if (typeof gameSocket !== 'undefined') {
+                gameSocket.sendPuzzleSolved(roomConfig.coOpPuzzle);
+            }
+        }
+    }
+
     renderGame();
     checkHeistTrigger();
 });
 
 renderGame();
+runAutoHeistIntro();

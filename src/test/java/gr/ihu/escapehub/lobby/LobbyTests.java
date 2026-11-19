@@ -33,8 +33,10 @@ class LobbyTests {
 
     private WebSocketSession createMockSession(String id) {
         WebSocketSession session = mock(WebSocketSession.class);
+
         when(session.getId()).thenReturn(id);
         when(session.isOpen()).thenReturn(true);
+
         return session;
     }
 
@@ -43,6 +45,21 @@ class LobbyTests {
         verify(session, atLeastOnce()).sendMessage(captor.capture());
         List<TextMessage> allMessages = captor.getAllValues();
         return objectMapper.readTree(allMessages.get(allMessages.size() - 1).getPayload());
+    }
+
+    private void startHeist(WebSocketSession session) throws Exception {
+        LobbyMessageDto startDto = new LobbyMessageDto(
+                MessageType.START_HEIST,
+                null,
+                null
+        );
+
+        lobbyHandler.handleMessage(
+                session,
+                new TextMessage(
+                        objectMapper.writeValueAsString(startDto)
+                )
+        );
     }
 
     @Test
