@@ -13,6 +13,17 @@ const roomConfig = {
     doors: [
         { id: 'main-door', x: 340, y: 580, width: 120, height: 20, locked: true, label: 'Κεντρική Πύλη Πυραμίδας (Κλειδωμένη)' },
         { id: 'room-b-door', x: 780, y: 240, width: 20, height: 120, locked: false, label: 'Προς Πτέρυγα Sully' }
+        ],
+    coOpPuzzle: [
+
+        { id: 'twin-security-plates',
+        label: 'Διπλός Μηχανισμός Ασφαλείας (2 Παίκτες)',
+        plates: [
+        { id: 'plate-1', x: 250, y: 455, width: 38, height: 38, active: false },
+        { id: 'plate-2', x: 510, y: 455, width: 38, height: 38, active: false }
+    ],
+        solved: false
+},
     ]
 };
 
@@ -23,6 +34,52 @@ const playerState = {
     speed: 10,
     direction: 'up'
 };
+const teammateState = {
+    x: 425,
+    y: 500,
+    size: 30,
+    direction: 'up',
+    visible: true // Θα συγχρονίζεται live από το gameSocket.js του Άγγελου
+};
+
+function getNearbyExhibit(state = playerState, config = roomConfig, reach = 25) {
+    const reachBox = {
+        x: state.x - reach,
+        y: state.y - reach,
+        width: state.size + reach * 2,
+        height: state.size + reach * 2
+    };
+    return config.obstacles.find(obs => {
+        if (obs.collected) return false;
+        if (!config.alarmTriggered && obs.hiddenBeforeAlarm) return false;
+        return isRectColliding(reachBox, obs);
+    }) || null;
+}
+
+function collectNearbyExhibit(state = playerState, config = roomConfig) {
+    const exhibit = getNearbyExhibit(state, config);
+    if (!exhibit) return null;
+    exhibit.collected = true;
+    return exhibit;
+}
+
+function checkCoOpPuzzle(p1 = playerState, p2 = teammateState, config = roomConfig) {
+    const puzzle = config.coOpPuzzle;
+    if (!puzzle || puzzle.solved) return false;
+
+    const box1 = { x: p1.x, y: p1.y, width: p1.size, height: p1.size };
+    const box2 = { x: p2.x, y: p2.y, width: p2.size, height: p2.size };
+
+    puzzle.plates.forEach(plate => {
+        plate.active = isRectColliding(box1, plate) || (p2.visible && isRectColliding(box2, plate));
+    });
+
+    if (puzzle.plates.every(plate => plate.active)) {
+        puzzle.solved = true;
+        return true;
+    }
+    return false;
+}
 
 /**
  * Βήμα 5: Έλεγχος αν δύο ορθογώνια επικαλύπτονται (AABB Collision)
@@ -113,6 +170,31 @@ function movePlayer(key, state = playerState, config = roomConfig) {
 function initPlayerControls(onMoveCallback) {
     if (typeof window !== 'undefined') {
         window.addEventListener('keydown', (event) => {
+            window.addEventListener('keydown', (event) => {
+                if (event.key === 'e' || event.key === 'E') {
+                    const taken = collectNearbyExhibit();
+                    if (taken && typeof onMoveCallback === 'function') {
+                        onMoveCallback(playerState, true, 'Collect', taken);
+                    }
+                }
+            });
+
+            const canvasEl = document.getElementById('museumCanvas');
+            if (canvasEl) {
+                canvasEl.addEventListener('click', (event) => {
+                    const rect = canvasEl.getBoundingClientRect();
+                    const mx = event.clientX - rect.left;
+                    const my = event.clientY - rect.top;
+                    const nearby = getNearbyExhibit();
+                    if (nearby && mx >= nearby.x - 15 && mx <= nearby.x + nearby.width + 15 &&
+                        my >= nearby.y - 15 && my <= nearby.y + nearby.height + 15) {
+                        const taken = collectNearbyExhibit();
+                        if (taken && typeof onMoveCallback === 'function') {
+                            onMoveCallback(playerState, true, 'ClickCollect', taken);
+                        }
+                    }
+                });
+            }
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
                 event.preventDefault();
                 const moved = movePlayer(event.key);
@@ -131,6 +213,10 @@ if (typeof module !== 'undefined' && module.exports) {
         playerState,
         checkCollision,
         movePlayer,
+        teammateState,
+        getNearbyExhibit,
+        collectNearbyExhibit,
+        checkCoOpPuzzle,
         isRectColliding
     };
 }
