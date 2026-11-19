@@ -221,15 +221,6 @@
     </style>
 </head>
 <body>
-
-<!-- Intro Modal (Εμφανίζεται μετά την κλοπή του μπροστινού εκθέματος) -->
-άναψαν και η Κεντρική Πύλη της Πυραμίδας κλείδωσε!
-            Βρείτε την έξοδο προς την Πτέρυγα Sully!
-        </p>
-        <button id="start-btn">Συνέχεια</button>
-    </div>
-</div>
-
 <div class="hud" id="hud-text">
     🔦 Κεντρική Αίθουσα Richelieu Wing | Πλησιάστε τα εκθέματα (⬆️ ⬇️ ⬅️ ➡️) & πατήστε <b>E</b>
 </div>
@@ -243,6 +234,12 @@
 
     <!-- Πλαϊνή Στήλη: Κοινό Ημερολόγιο (πάνω) & Chat (κάτω) -->
     <aside class="sidebar">
+        <section class="collection-panel">
+            <h2>🎒 Συλλογή Ομάδας (<span id="collection-count">0/3</span>)</h2>
+            <ul id="collection-list">
+                <li class="empty-msg">Κανένα έκθεμα ακόμα...</li>
+            </ul>
+        </section>
         <section class="journal-panel">
             <h2>📜 Κοινό Ημερολόγιο</h2>
             <ul id="journal-list">
@@ -261,7 +258,6 @@
 
 <script src="js/playerMovement.js"></script>
 <script src="js/gameRenderer.js"></script>
-<script src="js/gameSocket.js"></script>
 <script src="js/gameSocket.js"></script>
 </body>
 </html>

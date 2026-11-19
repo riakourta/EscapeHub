@@ -14,17 +14,15 @@ const roomConfig = {
         { id: 'main-door', x: 340, y: 580, width: 120, height: 20, locked: true, label: 'Κεντρική Πύλη Πυραμίδας (Κλειδωμένη)' },
         { id: 'room-b-door', x: 780, y: 240, width: 20, height: 120, locked: false, label: 'Προς Πτέρυγα Sully' }
         ],
-    coOpPuzzle: [
-
-        { id: 'twin-security-plates',
+    coOpPuzzle: {
+        id: 'twin-security-plates',
         label: 'Διπλός Μηχανισμός Ασφαλείας (2 Παίκτες)',
         plates: [
-        { id: 'plate-1', x: 250, y: 455, width: 38, height: 38, active: false },
-        { id: 'plate-2', x: 510, y: 455, width: 38, height: 38, active: false }
-    ],
+            { id: 'plate-1', x: 250, y: 455, width: 38, height: 38, active: false },
+            { id: 'plate-2', x: 510, y: 455, width: 38, height: 38, active: false }
+        ],
         solved: false
-},
-    ]
+    }
 };
 
 const playerState = {
@@ -34,6 +32,7 @@ const playerState = {
     speed: 10,
     direction: 'up'
 };
+
 const teammateState = {
     x: 425,
     y: 500,
@@ -170,14 +169,38 @@ function movePlayer(key, state = playerState, config = roomConfig) {
 function initPlayerControls(onMoveCallback) {
     if (typeof window !== 'undefined') {
         window.addEventListener('keydown', (event) => {
-            window.addEventListener('keydown', (event) => {
-                if (event.key === 'e' || event.key === 'E') {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                event.preventDefault();
+                const moved = movePlayer(event.key);
+                if (typeof onMoveCallback === 'function') {
+                    onMoveCallback(playerState, moved, event.key);
+                }
+            } else if (event.code === 'KeyE') {
+                const taken = collectNearbyExhibit();
+                if (taken && typeof onMoveCallback === 'function') {
+                    onMoveCallback(playerState, true, 'Collect', taken);
+                }
+            }
+        });
+
+        const canvasEl = document.getElementById('museumCanvas');
+        if (canvasEl) {
+            canvasEl.addEventListener('click', (event) => {
+                const rect = canvasEl.getBoundingClientRect();
+                const mx = event.clientX - rect.left;
+                const my = event.clientY - rect.top;
+                const nearby = getNearbyExhibit();
+                if (nearby && mx >= nearby.x - 15 && mx <= nearby.x + nearby.width + 15 &&
+                    my >= nearby.y - 15 && my <= nearby.y + nearby.height + 15) {
                     const taken = collectNearbyExhibit();
                     if (taken && typeof onMoveCallback === 'function') {
-                        onMoveCallback(playerState, true, 'Collect', taken);
+                        onMoveCallback(playerState, true, 'ClickCollect', taken);
                     }
                 }
             });
+        }
+    }
+}
 
             const canvasEl = document.getElementById('museumCanvas');
             if (canvasEl) {
@@ -201,9 +224,9 @@ function initPlayerControls(onMoveCallback) {
                 if (typeof onMoveCallback === 'function') {
                     onMoveCallback(playerState, moved, event.key);
                 }
-            }
-        });
-    }
+
+
+
 }
 
 // Export για το Jest (MovementTests.js) χωρίς να σπάει στον Browser

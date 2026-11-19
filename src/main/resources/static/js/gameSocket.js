@@ -23,8 +23,9 @@ const gameSocket = (() => {
     }
 
     function sendExhibitCollected(exhibit) {
-        logToJournal(`🏛️ Συλλέχθηκε: ${exhibit.label}`);
         emit('EXHIBIT_COLLECTED', { exhibitId: exhibit.id, label: exhibit.label });
+        logToJournal(`💎 Συλλέχθηκε: ${exhibit.label}`);
+        updateTeamCollection(); // <--- Αυτό αυξάνει το 0/3 σε 1/3, 2/3, 3/3
     }
 
     function sendPuzzleSolved(puzzle) {
@@ -66,6 +67,19 @@ const gameSocket = (() => {
     function connect(socketUrl) {
         if (!socketUrl) return;
         ws = new WebSocket(socketUrl);
+
+        ws.onopen = () => {
+            const token = localStorage.getItem('token') || '';
+            const nickname = localStorage.getItem('username') || 'Player';
+
+            ws.send(JSON.stringify({
+                type: 'join',
+                token: token,
+                nickname: nickname,
+                color: 'blue'
+            }));
+        };
+
         ws.onmessage = (e) => onServerMessage(e.data);
     }
 
