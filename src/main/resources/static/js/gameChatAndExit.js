@@ -173,8 +173,17 @@
     const abortBackBtn = document.getElementById('abort-back-btn');
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const socket = new WebSocket(`${protocol}//${window.location.host}${WS_ENDPOINT}`);
+    const socket = new WebSocket(protocol + '//' + window.location.host + WS_ENDPOINT);
+    const tokenKey = (typeof API_CONFIG !== 'undefined' && API_CONFIG.STORAGE_KEYS?.TOKEN) || 'jwtToken';
+    const token = localStorage.getItem(tokenKey) || localStorage.getItem('jwtToken') || '';
 
+    socket.addEventListener('open', () => {
+        socket.send(JSON.stringify({
+            type: 'JOIN_LOBBY',
+            username: `${playerColor}|${nickname}`,
+            token: token
+        }));
+    });
     socket.addEventListener('message', (event) => {
         const data = JSON.parse(event.data);
 
@@ -210,15 +219,15 @@
     });
 
     exitBtn.addEventListener('click', () => {
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
-                type: 'LEAVE_GAME',
-                sender: nickname
-            }));
-            socket.close();
-        }
-        window.location.href = EXIT_PAGE;
-    });
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'LEAVE_GAME',
+                    username: `${playerColor}|${nickname}`
+                }));
+                socket.close();
+            }
+            window.location.href = EXIT_PAGE;
+        });
 
     abortBackBtn.addEventListener('click', () => {
         window.location.href = EXIT_PAGE;
