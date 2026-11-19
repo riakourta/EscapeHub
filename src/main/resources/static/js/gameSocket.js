@@ -10,6 +10,28 @@ const gameSocket = (() => {
         list.appendChild(li);
         list.scrollTop = list.scrollHeight;
     }
+    function updateTeamCollection() {
+        const countEl = document.getElementById('collection-count');
+        const listEl = document.getElementById('collection-list');
+        if (!countEl || !listEl || typeof roomConfig === 'undefined') return;
+
+        const total = roomConfig.obstacles.length;
+        const collected = roomConfig.obstacles.filter(o => o.collected);
+
+        countEl.textContent = `${collected.length}/${total}`;
+        listEl.innerHTML = '';
+
+        if (collected.length === 0) {
+            listEl.innerHTML = '<li class="empty-msg">Κανένα έκθεμα ακόμα...</li>';
+            return;
+        }
+
+        collected.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `💎 ${item.label}`;
+            listEl.appendChild(li);
+        });
+    }
 
     // 2. Αποστολή γεγονότων προς το Backend (θα τα διαβάζει ο Άγγελος)
     function emit(type, payload) {
