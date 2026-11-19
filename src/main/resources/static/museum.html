@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EscapeHub - Αίθουσα Α</title>
+
     <style>
         * {
             box-sizing: border-box;
@@ -23,7 +24,88 @@
             overflow: hidden;
         }
 
-        /* Intro Modal - Κρυφό στην 1η σκηνή, εμφανίζεται μόλις κλέψεις το 1ο έκθεμα */
+        .main-layout {
+            display: flex;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        .sidebar {
+            width: 310px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .journal-panel,
+        .chat-slot-panel {
+            background: #0d0d14;
+            border: 1px solid #262638;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .journal-panel {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .journal-panel h2,
+        .chat-slot-panel h2 {
+            font-size: 0.95rem;
+            color: #e6c36a;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #1f1f2e;
+        }
+
+        #journal-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        #journal-list li {
+            background: #151522;
+            padding: 7px 9px;
+            border-left: 3px solid #00d2ff;
+            border-radius: 3px;
+            animation: fadeInEntry 0.3s ease;
+        }
+
+        @keyframes fadeInEntry {
+            from {
+                opacity: 0;
+                transform: translateX(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .chat-slot-panel {
+            height: 210px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chat-container {
+            flex: 1;
+            border: 1px dashed #2a2a3d;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            font-size: 0.82rem;
+        }
+
+        /* Εμφανίζεται από τον renderer μετά τον συναγερμό. */
         #intro-modal {
             position: fixed;
             inset: 0;
@@ -49,6 +131,7 @@
                 transform: scale(1);
                 filter: drop-shadow(0 0 10px #ff0000);
             }
+
             to {
                 transform: scale(1.15);
                 filter: drop-shadow(0 0 30px #ff3333);
@@ -112,7 +195,6 @@
             background-color: #101018;
         }
 
-        /* 1η Σκηνή: Ήσυχο σκοτάδι χωρίς κόκκινο συναγερμό */
         .darkness-overlay {
             position: absolute;
             inset: 0;
@@ -125,59 +207,95 @@
             transition: box-shadow 0.5s ease;
         }
 
-        /* 2η Σκηνή: Ενεργοποίηση κόκκινου παλμού συναγερμού */
         .darkness-overlay.alarm-active {
             animation: roomAlarm 1.5s infinite alternate ease-in-out;
         }
 
         @keyframes roomAlarm {
-            0% { box-shadow: inset 0 0 30px rgba(180, 0, 0, 0.15); }
-            100% { box-shadow: inset 0 0 95px rgba(255, 0, 0, 0.55); }
+            0% {
+                box-shadow: inset 0 0 30px rgba(180, 0, 0, 0.15);
+            }
+
+            100% {
+                box-shadow: inset 0 0 95px rgba(255, 0, 0, 0.55);
+            }
         }
 
-        /* Αγχωτικό τρέμουλο οθόνης τη στιγμή της κλοπής */
         .panic-shake {
             animation: shakeScreen 0.12s infinite;
         }
 
         @keyframes shakeScreen {
-            0% { transform: translate(0, 0); }
-            25% { transform: translate(-7px, 5px); }
-            50% { transform: translate(7px, -5px); }
-            75% { transform: translate(-5px, -5px); }
-            100% { transform: translate(5px, 5px); }
+            0% {
+                transform: translate(0, 0);
+            }
+
+            25% {
+                transform: translate(-7px, 5px);
+            }
+
+            50% {
+                transform: translate(7px, -5px);
+            }
+
+            75% {
+                transform: translate(-5px, -5px);
+            }
+
+            100% {
+                transform: translate(5px, 5px);
+            }
         }
     </style>
 </head>
+
 <body>
 
-<!-- Intro Modal (Εμφανίζεται μετά την κλοπή του μπροστινού εκθέματος) -->
 <div id="intro-modal">
-    <div class="alarm-icon">🚨</div>
     <div class="modal-box">
-        <h1>ΣΥΝΑΓΕΡΜΟΣ ΕΝΕΡΓΟΠΟΙΗΘΗΚΕ</h1>
+        <div class="alarm-icon">🚨</div>
+        <h1>ΣΥΝΑΓΕΡΜΟΣ!</h1>
         <p>
-            Πήρατε το έργο τέχνης, αλλά ο συναγερμός ενεργοποιήθηκε...
-            Τα φώτα ασφαλείας άναψαν και η Κεντρική Πύλη της Πυραμίδας κλείδωσε!
+            Τα φώτα άναψαν και η Κεντρική Πύλη της Πυραμίδας κλείδωσε!
             Βρείτε την έξοδο προς την Πτέρυγα Sully!
         </p>
-        <button id="start-btn">Συνέχεια</button>
+        <button id="start-btn" type="button">Συνέχεια</button>
     </div>
 </div>
 
 <div class="hud" id="hud-text">
-    🔦 Κεντρική Αίθουσα Richelieu Wing | Πλησιάστε το έκθεμα μπροστά σας με τα βελάκια (⬆️ ⬇️ ⬅️ ➡️)
+    🔦 Κεντρική Αίθουσα Richelieu Wing |
+    Πλησιάστε τα εκθέματα (⬆️ ⬇️ ⬅️ ➡️) & πατήστε <b>E</b>
 </div>
 
-<!-- Καμβάς Μουσείου & Εφέ Σκοταδιού -->
-<div id="game-wrapper">
-    <canvas id="museumCanvas" width="800" height="600"></canvas>
-    <div id="darkness" class="darkness-overlay"></div>
+<div class="main-layout">
+    <div id="game-wrapper">
+        <canvas id="museumCanvas" width="800" height="600"></canvas>
+        <div id="darkness" class="darkness-overlay"></div>
+    </div>
+
+    <aside class="sidebar">
+        <section class="journal-panel">
+            <h2>📜 Κοινό Ημερολόγιο</h2>
+            <ul id="journal-list">
+                <li>Είσοδος στην Πτέρυγα Richelieu.</li>
+            </ul>
+        </section>
+
+        <section class="chat-slot-panel">
+            <h2>💬 Chat Ομάδας</h2>
+            <div id="chat-container">
+                Χώρος Chat (Ελευθερία)
+            </div>
+        </section>
+    </aside>
 </div>
 
-<script src="js/playerMovement.js"></script>
-<script src="js/gameRenderer.js"></script>
 <script src="apiClient.js"></script>
+<script src="js/playerMovement.js"></script>
+<script src="js/gameSocket.js"></script>
+<script src="js/gameRenderer.js"></script>
 <script src="js/gameChatAndExit.js"></script>
+
 </body>
 </html>
