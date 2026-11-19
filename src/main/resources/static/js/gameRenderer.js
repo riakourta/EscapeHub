@@ -82,7 +82,7 @@ function getDirectionAngle(direction) {
 }
 
 /**
- * Ζωγραφίζει τα αντικείμενα του δωματίου (χρησιμοποιείται σκοτεινά στο βάθος και φωτεινά μέσα στον φακό)
+ * Ζωγραφίζει τα αντικείμενα του δωματίου (σκοτεινά στο βάθος και φωτεινά μέσα στον φακό)
  */
 function drawRoomElements(isLit) {
     const { width, height, wallThickness, obstacles, doors, alarmTriggered } = roomConfig;
@@ -142,24 +142,25 @@ function drawRoomElements(isLit) {
 
     // 4. Εκθέματα
     obstacles.forEach(obs => {
+        if (obs.collected) return;
         if (!alarmTriggered && obs.hiddenBeforeAlarm) return;
 
-        // Στο σκοτάδι είναι σχεδόν αόρατες σκιές, στον φακό φωτίζονται κανονικά
-        ctx.fillStyle = isLit ? '#3a2e28' : '#090808';
-        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-
         if (isLit) {
-            ctx.strokeStyle = alarmTriggered ? '#ff4444' : '#c5a059';
+            ctx.fillStyle = alarmTriggered ? 'rgba(180, 40, 40, 0.35)' : 'rgba(197, 160, 89, 0.3)';
+            ctx.strokeStyle = alarmTriggered ? '#ff4444' : '#e6c36a';
         } else {
+            ctx.fillStyle = 'rgba(20, 20, 30, 0.25)';
             ctx.strokeStyle = alarmTriggered ? 'rgba(90, 15, 15, 0.35)' : 'rgba(60, 50, 30, 0.25)';
         }
+
         ctx.lineWidth = 2;
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
         ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
 
-        // Το όνομα του εκθέματος αποκαλύπτεται μόνο με τον φακό!
-        if (isLit) {
+        // Εμφάνιση ονόματος εκθέματος όταν το φωτίζει ο φακός
+        if (isLit && obs.label) {
             ctx.fillStyle = '#ffffff';
-            ctx.font = '12px sans-serif';
+            ctx.font = 'bold 11px sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height / 2 + 4);
         }
@@ -167,7 +168,7 @@ function drawRoomElements(isLit) {
 }
 
 /**
- * Βήμα 2 & 3: Σχεδίαση με ρεαλιστική μάσκα φακού (όλα σκοτεινά εκτός από τη δέσμη)
+ * Σχεδίαση με ρεαλιστική μάσκα φακού (όλα σκοτεινά εκτός από τη δέσμη)
  */
 function renderGame() {
     if (!ctx) return;
@@ -179,13 +180,13 @@ function renderGame() {
 
     ctx.clearRect(0, 0, width, height);
 
-    // ΣΤΡΩΣΗ 1: Δωμάτιο φωτεινό στο υπόβαθρο
-    drawRoomElements(true);
+    // ΣΤΡΩΣΗ 1: Σχεδίαση ολόκληρου του δωματίου στο σκοτάδι
+    drawRoomElements(false);
 
-    // ΣΤΡΩΣΗ 2: Σκοτεινό πέπλο & ομαλός φακός ΜΟΝΟ μπροστά από τον παίκτη
+    // ΣΤΡΩΣΗ 2: Αποκάλυψη του δωματίου ΜΟΝΟ μέσα στον κώνο του φακού μπροστά από τον παίκτη
     let srcX = centerX;
     let srcY = centerY;
-    const tipOffset = 12;
+    const tipOffset = 10;
     if (playerState.direction === 'up') srcY -= tipOffset;
     else if (playerState.direction === 'down') srcY += tipOffset;
     else if (playerState.direction === 'left') srcX -= tipOffset;
@@ -195,21 +196,22 @@ function renderGame() {
     const narrowSpread = Math.PI / 5;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(2, 2, 6, 0.97)';
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.globalCompositeOperation = 'destination-out';
-    const fadeGrad = ctx.createRadialGradient(srcX, srcY, 2, srcX, srcY, smoothBeamLength);
-    fadeGrad.addColorStop(0, 'rgba(0, 0, 0, 1)');
-    fadeGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.85)');
-    fadeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
     ctx.beginPath();
     ctx.moveTo(srcX, srcY);
     ctx.arc(srcX, srcY, smoothBeamLength, angle - narrowSpread, angle + narrowSpread);
     ctx.closePath();
-    ctx.fillStyle = fadeGrad;
-    ctx.fill();
+    ctx.clip();
+
+    // Ζωγραφίζουμε τα φωτισμένα εκθέματα, τα ονόματά τους και το δάπεδο μέσα στον φακό
+    drawRoomElements(true);
+
+    // Απαλή λάμψη φακού που σβήνει ομαλά στην άκρη
+    const coneGrad = ctx.createRadialGradient(srcX, srcY, 5, srcX, srcY, smoothBeamLength);
+    coneGrad.addColorStop(0, 'rgba(255, 255, 200, 0.22)');
+    coneGrad.addColorStop(0.65, 'rgba(255, 255, 180, 0.06)');
+    coneGrad.addColorStop(1, 'rgba(0, 0, 0, 0.85)');
+    ctx.fillStyle = coneGrad;
+    ctx.fillRect(0, 0, width, height);
     ctx.restore();
 
     // ΣΤΡΩΣΗ 3: Πλάκες 2-Player Γρίφου & Ένδειξη [E] πάνω από κοντινό έκθεμα
@@ -286,8 +288,12 @@ function runAutoHeistIntro() {
         } else {
             clearInterval(walkInterval);
             isIntroAutoWalking = false;
+            target.collected = true;
             if (typeof gameSocket !== 'undefined') {
                 gameSocket.logToJournal('🗡️ Κλάπηκε το Ξίφος του Καρλομάγνου! Χτύπησε συναγερμός!');
+                if (gameSocket.updateTeamCollection) {
+                    gameSocket.updateTeamCollection();
+                }
             }
             triggerAlarmSequence(target);
         }

@@ -10,6 +10,28 @@ const gameSocket = (() => {
         list.appendChild(li);
         list.scrollTop = list.scrollHeight;
     }
+    function updateTeamCollection() {
+        const countEl = document.getElementById('collection-count');
+        const listEl = document.getElementById('collection-list');
+        if (!countEl || !listEl || typeof roomConfig === 'undefined') return;
+
+        const total = roomConfig.obstacles.length;
+        const collected = roomConfig.obstacles.filter(o => o.collected);
+
+        countEl.textContent = `${collected.length}/${total}`;
+        listEl.innerHTML = '';
+
+        if (collected.length === 0) {
+            listEl.innerHTML = '<li class="empty-msg">Κανένα έκθεμα ακόμα...</li>';
+            return;
+        }
+
+        collected.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `💎 ${item.label}`;
+            listEl.appendChild(li);
+        });
+    }
 
     // 2. Αποστολή γεγονότων προς το Backend (θα τα διαβάζει ο Άγγελος)
     function emit(type, payload) {
@@ -23,8 +45,9 @@ const gameSocket = (() => {
     }
 
     function sendExhibitCollected(exhibit) {
-        logToJournal(`🏛️ Συλλέχθηκε: ${exhibit.label}`);
         emit('EXHIBIT_COLLECTED', { exhibitId: exhibit.id, label: exhibit.label });
+        logToJournal(`💎 Συλλέχθηκε: ${exhibit.label}`);
+        updateTeamCollection(); // <--- Αυτό αυξάνει το 0/3 σε 1/3, 2/3, 3/3
     }
 
     function sendPuzzleSolved(puzzle) {
@@ -66,6 +89,19 @@ const gameSocket = (() => {
     function connect(socketUrl) {
         if (!socketUrl) return;
         ws = new WebSocket(socketUrl);
+
+        ws.onopen = () => {
+            const token = localStorage.getItem('token') || '';
+            const nickname = localStorage.getItem('username') || 'Player';
+
+            ws.send(JSON.stringify({
+                type: 'join',
+                token: token,
+                nickname: nickname,
+                color: 'blue'
+            }));
+        };
+
         ws.onmessage = (e) => onServerMessage(e.data);
     }
 
