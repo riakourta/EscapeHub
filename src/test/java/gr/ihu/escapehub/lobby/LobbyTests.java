@@ -1,47 +1,34 @@
 package gr.ihu.escapehub.lobby;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gr.ihu.escapehub.lobby.dto.LobbyMessageDto;
-import gr.ihu.escapehub.lobby.dto.LobbyStateResponseDto;
-import gr.ihu.escapehub.lobby.dto.MessageType;
 import gr.ihu.escapehub.lobby.handler.LobbyHandler;
 import gr.ihu.escapehub.state.service.GameStateManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class LobbyTests {
 
-    private static final int REQUIRED_PLAYERS = 3;
-    private static final int MAX_PLAYERS = 6;
-
-    private LobbyHandler lobbyHandler;
     private ObjectMapper objectMapper;
     private GameStateManager gameStateManager;
+    private LobbyHandler lobbyHandler;
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper().findAndRegisterModules();
-
-        gameStateManager = new GameStateManager(
-                3600,
-                REQUIRED_PLAYERS
-        );
-
-        lobbyHandler = new LobbyHandler(
-                objectMapper,
-                gameStateManager,
-                REQUIRED_PLAYERS,
-                MAX_PLAYERS
-        );
+        objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        gameStateManager = mock(GameStateManager.class);
+        lobbyHandler = new LobbyHandler(objectMapper, gameStateManager, 3, 6);
     }
 
     private WebSocketSession createMockSession(String id) {
@@ -53,22 +40,11 @@ class LobbyTests {
         return session;
     }
 
-    private void joinPlayer(
-            WebSocketSession session,
-            String username
-    ) throws Exception {
-        LobbyMessageDto joinDto = new LobbyMessageDto(
-                MessageType.JOIN_LOBBY,
-                username,
-                "valid-token"
-        );
-
-        TextMessage message = new TextMessage(
-                objectMapper.writeValueAsString(joinDto)
-        );
-
-        lobbyHandler.afterConnectionEstablished(session);
-        lobbyHandler.handleMessage(session, message);
+    private JsonNode getLastSentJson(WebSocketSession session) throws Exception {
+        ArgumentCaptor<TextMessage> captor = ArgumentCaptor.forClass(TextMessage.class);
+        verify(session, atLeastOnce()).sendMessage(captor.capture());
+        List<TextMessage> allMessages = captor.getAllValues();
+        return objectMapper.readTree(allMessages.get(allMessages.size() - 1).getPayload());
     }
 
     private void startHeist(WebSocketSession session) throws Exception {
@@ -87,79 +63,122 @@ class LobbyTests {
     }
 
     @Test
-    void shouldRejectStartHeistWhenLessThanThreePlayers() throws Exception {
-        WebSocketSession p1 = createMockSession("1");
-        WebSocketSession p2 = createMockSession("2");
+    void testJoinLobbyUpdatesCountAndMaxPlayers() throws Exception {
+        WebSocketSession s1 = createMockSession("s1");
 
-        joinPlayer(p1, "Bandit1");
-        joinPlayer(p2, "Bandit2");
-
-        assertEquals(2, lobbyHandler.getConnectedPlayersCount());
-
-        clearInvocations(p1, p2);
-
-        startHeist(p1);
-
-        ArgumentCaptor<TextMessage> captor =
-                ArgumentCaptor.forClass(TextMessage.class);
-
-        verify(p1).sendMessage(captor.capture());
-
-        LobbyStateResponseDto response = objectMapper.readValue(
-                captor.getValue().getPayload(),
-                LobbyStateResponseDto.class
-        );
-
-        assertEquals(MessageType.ERROR, response.type());
-        assertEquals(2, response.count());
-        assertEquals(REQUIRED_PLAYERS, response.required());
-        assertFalse(gameStateManager.isGameActive());
-    }
-
-    @Test
-    void shouldStartHeistWhenThreePlayersConnected() throws Exception {
-        WebSocketSession p1 = createMockSession("1");
-        WebSocketSession p2 = createMockSession("2");
-        WebSocketSession p3 = createMockSession("3");
-
-        joinPlayer(p1, "Bandit1");
-        joinPlayer(p2, "Bandit2");
-        joinPlayer(p3, "Bandit3");
-
-        assertEquals(3, lobbyHandler.getConnectedPlayersCount());
-
-        clearInvocations(p1, p2, p3);
-
-        startHeist(p1);
-
-        ArgumentCaptor<TextMessage> captor =
-                ArgumentCaptor.forClass(TextMessage.class);
-
-        verify(p1).sendMessage(captor.capture());
-        verify(p2).sendMessage(any(TextMessage.class));
-        verify(p3).sendMessage(any(TextMessage.class));
-
-        LobbyStateResponseDto response = objectMapper.readValue(
-                captor.getValue().getPayload(),
-                LobbyStateResponseDto.class
-        );
-
-        assertEquals(MessageType.GAME_STARTING, response.type());
-        assertEquals(3, response.count());
-        assertTrue(gameStateManager.isGameActive());
-        assertEquals(3, gameStateManager.getActivePlayersCount());
-    }
-
-    @Test
-    void shouldRemovePlayerOnDisconnect() throws Exception {
-        WebSocketSession p1 = createMockSession("1");
-
-        joinPlayer(p1, "Bandit1");
+        lobbyHandler.handleMessage(s1, new TextMessage(
+                "{\"type\":\"JOIN_LOBBY\",\"username\":\"#ef4444|Eleftheria\"}"
+        ));
 
         assertEquals(1, lobbyHandler.getConnectedPlayersCount());
+        JsonNode response = getLastSentJson(s1);
+        assertEquals("LOBBY_UPDATE", response.get("type").asText());
+        assertEquals(1, response.get("count").asInt());
+        assertEquals(3, response.get("required").asInt());
+        assertEquals(6, response.get("maxPlayers").asInt());
+    }
 
-        lobbyHandler.afterConnectionClosed(p1, CloseStatus.NORMAL);
+    @Test
+    void testStartHeistFailsWithLessThanThreePlayers() throws Exception {
+        WebSocketSession s1 = createMockSession("s1");
+        WebSocketSession s2 = createMockSession("s2");
 
-        assertEquals(0, lobbyHandler.getConnectedPlayersCount());
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#ef4444|P1\"}"));
+        lobbyHandler.handleMessage(s2, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#38bdf8|P2\"}"));
+
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"START_HEIST\"}"));
+
+        JsonNode response = getLastSentJson(s1);
+        assertEquals("ERROR", response.get("type").asText());
+        verify(gameStateManager, never()).startGame(any());
+    }
+
+    @Test
+    void testStartHeistSucceedsWithThreePlayers() throws Exception {
+        WebSocketSession s1 = createMockSession("s1");
+        WebSocketSession s2 = createMockSession("s2");
+        WebSocketSession s3 = createMockSession("s3");
+
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#ef4444|P1\"}"));
+        lobbyHandler.handleMessage(s2, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#38bdf8|P2\"}"));
+        lobbyHandler.handleMessage(s3, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#34d399|P3\"}"));
+
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"START_HEIST\"}"));
+
+        JsonNode response = getLastSentJson(s1);
+        assertEquals("GAME_STARTING", response.get("type").asText());
+        verify(gameStateManager, times(1)).startGame(any());
+    }
+
+    @Test
+    void testLobbyRejectsSeventhPlayer() throws Exception {
+        for (int i = 1; i <= 6; i++) {
+            WebSocketSession s = createMockSession("s" + i);
+            lobbyHandler.handleMessage(s, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#fff|P" + i + "\"}"));
+        }
+
+        WebSocketSession s7 = createMockSession("s7");
+        lobbyHandler.handleMessage(s7, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#fff|P7\"}"));
+
+        assertEquals(6, lobbyHandler.getConnectedPlayersCount());
+        JsonNode response = getLastSentJson(s7);
+        assertEquals("ERROR", response.get("type").asText());
+    }
+
+    @Test
+    void testLeaveLobbyRemovesPlayerAndBroadcastsUpdate() throws Exception {
+        WebSocketSession s1 = createMockSession("s1");
+        WebSocketSession s2 = createMockSession("s2");
+
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#ef4444|P1\"}"));
+        lobbyHandler.handleMessage(s2, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#38bdf8|P2\"}"));
+
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"LEAVE_LOBBY\"}"));
+
+        assertEquals(1, lobbyHandler.getConnectedPlayersCount());
+        JsonNode response = getLastSentJson(s2);
+        assertEquals("LOBBY_UPDATE", response.get("type").asText());
+        assertEquals(1, response.get("count").asInt());
+    }
+
+    @Test
+    void testChatMessageBroadcastsToPlayers() throws Exception {
+        WebSocketSession s1 = createMockSession("s1");
+        WebSocketSession s2 = createMockSession("s2");
+
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#ef4444|Eleftheria\"}"));
+        lobbyHandler.handleMessage(s2, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#38bdf8|Christos\"}"));
+
+        lobbyHandler.handleMessage(s1, new TextMessage(
+                "{\"type\":\"CHAT_MESSAGE\",\"sender\":\"Eleftheria\",\"color\":\"#ef4444\",\"message\":\"Βρήκα το κλειδί!\"}"
+        ));
+
+        JsonNode chatMsg = getLastSentJson(s2);
+        assertEquals("CHAT_MESSAGE", chatMsg.get("type").asText());
+        assertEquals("Eleftheria", chatMsg.get("sender").asText());
+        assertEquals("#ef4444", chatMsg.get("color").asText());
+        assertEquals("Βρήκα το κλειδί!", chatMsg.get("message").asText());
+    }
+
+    @Test
+    void testLeaveGameAbortsWhenTooFewPlayersRemain() throws Exception {
+        WebSocketSession s1 = createMockSession("s1");
+        WebSocketSession s2 = createMockSession("s2");
+        WebSocketSession s3 = createMockSession("s3");
+
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#ef4444|P1\"}"));
+        lobbyHandler.handleMessage(s2, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#38bdf8|P2\"}"));
+        lobbyHandler.handleMessage(s3, new TextMessage("{\"type\":\"JOIN_LOBBY\",\"username\":\"#34d399|P3\"}"));
+
+        GameStateManager.LeaveResult mockResult = mock(GameStateManager.LeaveResult.class);
+        when(mockResult.outcome()).thenReturn(GameStateManager.PlayerLeaveOutcome.GAME_STOPPED);
+        when(mockResult.message()).thenReturn("Έμειναν λιγότεροι από 3 παίκτες.");
+        when(gameStateManager.removePlayer("#ef4444|P1")).thenReturn(mockResult);
+
+        lobbyHandler.handleMessage(s1, new TextMessage("{\"type\":\"LEAVE_GAME\",\"username\":\"#ef4444|P1\"}"));
+
+        JsonNode abortMsg = getLastSentJson(s2);
+        assertEquals("GAME_ABORTED", abortMsg.get("type").asText());
+        assertEquals("Έμειναν λιγότεροι από 3 παίκτες.", abortMsg.get("reason").asText());
     }
 }
