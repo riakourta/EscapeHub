@@ -191,7 +191,34 @@ function drawRoomElements(isLit) {
     });
 
 }
+function drawNetworkPlayer(player) {
+    const size = player.size || 30;
+    const x = player.x + size / 2;
+    const y = player.y + size / 2;
+    const color = player.color || 'blue';
 
+    ctx.save();
+
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = color;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(player.nickname || 'Player', x, y - 16);
+
+    ctx.restore();
+}
 /**
  * Σχεδίαση με ρεαλιστική μάσκα φακού (όλα σκοτεινά εκτός από τη δέσμη)
  */
@@ -259,72 +286,14 @@ function renderGame() {
         ctx.fillText('[E] Πάρε', nearby.x + nearby.width / 2, nearby.y - 8);
     }
 
-    // ΣΤΡΩΣΗ 4: Συμπαίκτης (Πορτοκαλί) & Παίκτης (Γαλάζιος)
-    if (typeof teammateState !== 'undefined' && teammateState.visible) {
-        const tx = teammateState.x + teammateState.size / 2;
-        const ty = teammateState.y + teammateState.size / 2;
-        ctx.save();
-        ctx.shadowColor = '#ff9900';
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = '#ff9900';
-        ctx.beginPath();
-        ctx.arc(tx, ty, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
+    // ΣΤΡΩΣΗ 4: Πραγματικοί συμπαίκτες και τοπικός παίκτης
+    for (const player of networkPlayers.values()) {
+        drawNetworkPlayer(player);
     }
 
-    ctx.save();
-    ctx.shadowColor = '#00d2ff';
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = '#00d2ff';
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
+    drawNetworkPlayer(playerState);
 }
-
-let isIntroAutoWalking = true;
-
-function runAutoHeistIntro() {
-    const target = roomConfig.obstacles.find(o => o.isTarget);
-    if (!target || roomConfig.alarmTriggered) {
-        isIntroAutoWalking = false;
-        renderGame();
-        return;
-    }
-
-    const goalY = target.y + target.height + 8;
-
-    const walkInterval = setInterval(() => {
-        if (playerState.y > goalY) {
-            playerState.y -= 1.5;
-            playerState.direction = 'up';
-            if (typeof teammateState !== 'undefined') {
-                teammateState.y -= 1.5;
-                teammateState.direction = 'up';
-            }
-            renderGame();
-        } else {
-            clearInterval(walkInterval);
-            isIntroAutoWalking = false;
-            target.collected = true;
-            if (typeof gameSocket !== 'undefined') {
-                gameSocket.logToJournal('🗡️ Κλάπηκε το Ξίφος του Καρλομάγνου! Χτύπησε συναγερμός!');
-                if (gameSocket.updateTeamCollection) {
-                    gameSocket.updateTeamCollection();
-                }
-            }
-            triggerAlarmSequence(target);
-        }
-    }, 55);
-}
-
+let isIntroAutoWalking = false;
 // Αρχικοποίηση χειρισμού, intro & πρώτου render
 initPlayerControls((state, moved, action, takenExhibit) => {
     if (isPanicSequenceRunning || isIntroAutoWalking) return;
@@ -337,11 +306,8 @@ initPlayerControls((state, moved, action, takenExhibit) => {
         if (typeof gameSocket !== 'undefined') {
             gameSocket.sendMove(state);
         }
-        if (typeof checkCoOpPuzzle === 'function' && checkCoOpPuzzle()) {
-            if (typeof gameSocket !== 'undefined') {
-                gameSocket.sendPuzzleSolved(roomConfig.coOpPuzzle);
-            }
-        }
+
+
     }
 
     renderGame();

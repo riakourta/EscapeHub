@@ -107,6 +107,8 @@ const playerState = {
     speed: 10,
     direction: 'up'
 };
+const networkPlayers = new Map();
+let localPlayerId = null;
 
 const teammateState = {
     x: 425,
@@ -152,12 +154,7 @@ function collectNearbyExhibit(
     state = playerState,
     config = roomConfig
 ) {
-    const exhibit = getNearbyExhibit(state, config);
-
-    if (!exhibit) return null;
-
-    exhibit.collected = true;
-    return exhibit;
+    return getNearbyExhibit(state, config);
 }
 
 function checkCoOpPuzzle(
@@ -165,36 +162,7 @@ function checkCoOpPuzzle(
     p2 = teammateState,
     config = roomConfig
 ) {
-    const puzzle = config.coOpPuzzle;
-
-    if (!puzzle || puzzle.solved) return false;
-
-    const box1 = {
-        x: p1.x,
-        y: p1.y,
-        width: p1.size,
-        height: p1.size
-    };
-
-    const box2 = {
-        x: p2.x,
-        y: p2.y,
-        width: p2.size,
-        height: p2.size
-    };
-
-    puzzle.plates.forEach(plate => {
-        plate.active =
-            isRectColliding(box1, plate) ||
-            (p2.visible && isRectColliding(box2, plate));
-    });
-
-    if (puzzle.plates.every(plate => plate.active)) {
-        puzzle.solved = true;
-        return true;
-    }
-
-    return false;
+    return Boolean(config.coOpPuzzle?.solved);
 }
 
 function checkCollision(
@@ -222,6 +190,10 @@ function checkCollision(
     };
 
     for (const obs of config.obstacles) {
+        if (obs.collected) {
+            continue;
+        }
+
         if (!config.alarmTriggered && obs.hiddenBeforeAlarm) {
             continue;
         }
@@ -288,6 +260,7 @@ function initPlayerControls(onMoveCallback) {
 
     function controlsBlocked() {
         return (
+            localPlayerId === null ||
             (typeof isPanicSequenceRunning !== 'undefined' &&
                 isPanicSequenceRunning) ||
             (typeof isIntroAutoWalking !== 'undefined' &&
