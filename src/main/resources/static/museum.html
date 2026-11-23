@@ -20,8 +20,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            padding: 16px;
         }
 
         .main-layout {
@@ -44,6 +44,37 @@
             border: 1px solid #262638;
             border-radius: 6px;
             padding: 12px;
+        }
+        /* Scrollbar για το Ημερολόγιο */
+        .journal-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .journal-panel::-webkit-scrollbar-thumb {
+            background: #2a2a3d;
+            border-radius: 3px;
+        }
+
+        /* Styling για τη Συλλογή Ομάδας */
+        #collection-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.85rem;
+        }
+
+        #collection-list li {
+            background: #151522;
+            padding: 6px 9px;
+            border-left: 3px solid #e6c36a;
+            border-radius: 3px;
+        }
+
+        #collection-list .empty-msg {
+            color: #666;
+            border-left-color: #333;
+            font-style: italic;
         }
 
         .journal-panel {
@@ -177,9 +208,17 @@
         }
 
         .hud {
-            margin-bottom: 10px;
-            font-size: 0.95rem;
-            color: #999;
+            width: 1126px; /* 800px canvas + 16px gap + 310px sidebar */
+            max-width: 100%;
+            background: #0d0d14;
+            border: 1px solid #262638;
+            border-radius: 6px;
+            padding: 10px 16px;
+            margin-bottom: 12px;
+            font-size: 0.92rem;
+            color: #ccc;
+            text-align: center;
+
         }
 
         #game-wrapper {
@@ -246,17 +285,308 @@
                 transform: translate(5px, 5px);
             }
         }
+        /* ===== CINEMA INTRO MODE ===== */
+        body.cinema-mode .hud,
+        body.cinema-mode .sidebar,
+        body.cinema-mode .legend-bar {
+            display: none !important;
+        }
+
+        body.cinema-mode > *:not(.main-layout):not(#intro-modal):not(.cinema-bar):not(.cinema-subtitle):not(#movie-title-screen):not(#cutscene-overlay) {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        /* ===== VINTAGE CAMERA CUTSCENE ===== */
+        #cutscene-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 1900;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.2s ease;
+            overflow: hidden;
+        }
+
+        #cutscene-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .cutscene-slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+
+        .cutscene-slide.show {
+            opacity: 1;
+        }
+
+        /* Vintage φίλτρο + αργό κινηματογραφικό zoom κάμερας */
+        .cutscene-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: contrast(1.18) brightness(0.72) sepia(0.28) saturate(0.75);
+            transform: scale(1);
+            transition: transform 6s ease-out;
+        }
+
+        .cutscene-slide.show img {
+            transform: scale(1.09);
+        }
+
+        /* Scanlines & σκοτεινή βινιέτα vintage κάμερας */
+        .vintage-fx {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                    repeating-linear-gradient(
+                            0deg,
+                            rgba(0, 0, 0, 0.22) 0px,
+                            rgba(0, 0, 0, 0.22) 1px,
+                            transparent 1px,
+                            transparent 3px
+                    ),
+                    radial-gradient(circle, transparent 45%, rgba(0, 0, 0, 0.88) 100%);
+            z-index: 2;
+        }
+
+        /* Ένδειξη REC & κάμερα πάνω αριστερά */
+        .cam-hud {
+            position: absolute;
+            top: 26px;
+            left: 32px;
+            z-index: 3;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: 2px;
+            text-shadow: 0 0 8px #000;
+        }
+
+        .rec-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #ff2b2b;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 10px #ff2b2b;
+            animation: blinkRec 1s infinite;
+        }
+
+        @keyframes blinkRec {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+
+        /* Υπότιτλοι cutscene */
+        .cutscene-caption {
+            position: absolute;
+            bottom: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            width: 82%;
+            max-width: 720px;
+            text-align: center;
+            background: rgba(5, 5, 10, 0.72);
+            border-left: 3px solid #e6c36a;
+            padding: 14px 22px;
+            border-radius: 4px;
+            color: #f2f2f2;
+            font-size: 1.05rem;
+            line-height: 1.5;
+            letter-spacing: 0.4px;
+            text-shadow: 0 2px 8px #000;
+        }
+
+        body.cinema-mode #game-wrapper {
+            transform: scale(1.06);
+            transition: transform 0.6s ease;
+        }
+
+        .cinema-bar {
+            position: fixed;
+            left: 0;
+            width: 100%;
+            height: 0;
+            background: #000;
+            z-index: 900;
+            transition: height 0.6s ease;
+            pointer-events: none;
+        }
+        .cinema-bar.top { top: 0; }
+        .cinema-bar.bottom { bottom: 0; }
+
+        body.cinema-mode .cinema-bar {
+            height: 58px;
+        }
+
+        .cinema-subtitle {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 950;
+            color: #e6c36a;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        body.cinema-mode .cinema-subtitle {
+            opacity: 1;
+        }
+        /* ===== MOVIE TITLE CARD ===== */
+        /* ===== CINEMATIC NIGHT SCENE (LOUVRE AT NIGHT) ===== */
+        #movie-title-screen {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at bottom, #101628 0%, #05070e 65%, #020306 100%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
+            transition: opacity 1.4s ease;
+        }
+
+        #movie-title-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+
+
+        /* Αστέρια που τρεμοπαίζουν */
+        .night-stars {
+            position: absolute;
+            inset: 0;
+            background-image:
+                    radial-gradient(1.5px 1.5px at 15% 20%, #fff, transparent),
+                    radial-gradient(1px 1px at 32% 12%, #cfd8ff, transparent),
+                    radial-gradient(2px 2px at 55% 18%, #fff, transparent),
+                    radial-gradient(1.5px 1.5px at 78% 15%, #e6c36a, transparent),
+                    radial-gradient(1px 1px at 88% 28%, #fff, transparent),
+                    radial-gradient(1.5px 1.5px at 24% 38%, #fff, transparent),
+                    radial-gradient(1px 1px at 67% 32%, #cfd8ff, transparent),
+                    radial-gradient(1.5px 1.5px at 42% 28%, #fff, transparent);
+            opacity: 0.7;
+            animation: twinkleStars 3s infinite alternate ease-in-out;
+        }
+
+        @keyframes twinkleStars {
+            from { opacity: 0.45; }
+            to { opacity: 0.9; }
+        }
+
+        /* Φεγγάρι */
+        .night-moon {
+            position: absolute;
+            top: 12%;
+            right: 16%;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fffbe6, #d9cfa8);
+            box-shadow: 0 0 35px rgba(255, 248, 210, 0.35), 0 0 80px rgba(180, 200, 255, 0.15);
+            opacity: 0;
+            animation: titleFadeIn 1.5s ease forwards;
+        }
+
+        /* Πυραμίδα του Λούβρου στο κάτω μέρος */
+        .louvre-pyramid {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 520px;
+            max-width: 90vw;
+            opacity: 0;
+            animation: titleFadeIn 1.8s ease 0.3s forwards;
+            filter: drop-shadow(0 -10px 35px rgba(230, 195, 106, 0.18));
+        }
+
+        .title-content {
+            position: relative;
+            z-index: 2;
+            margin-bottom: 90px;
+        }
+
+        .title-location {
+            color: #e6c36a;
+            font-size: 0.9rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            opacity: 0;
+            animation: titleFadeIn 1.2s ease forwards;
+        }
+
+        .title-time {
+            color: #f0f0f0;
+            font-size: 2rem;
+            font-weight: 300;
+            letter-spacing: 3px;
+            opacity: 0;
+            animation: titleFadeIn 1.2s ease 0.5s forwards;
+        }
+
+        @keyframes titleFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 
-<body>
+<body class="cinema-mode">
+<div id="movie-title-screen">
+    <div class="title-location">ΜΟΥΣΕΙΟ ΤΟΥ ΛΟΥΒΡΟΥ • ΠΑΡΙΣΙ</div>
+    <div class="title-time">19 Οκτωβρίου 2025 — 02:14 π.μ.</div>
+</div>
+<!-- Vintage Camera Cutscene (2 Σκηνές) -->
+<div id="cutscene-overlay">
+    <div class="cam-hud"><span class="rec-dot"></span>REC • CAM-04 // RICHELIEU</div>
+    <div class="vintage-fx"></div>
+
+    <!-- Σκηνή 1: Έξω από το Λούβρο -->
+    <div class="cutscene-slide" id="scene-1">
+        <img src="images.jpeg" alt="Λούβρο Νύχτα">
+        <div class="cutscene-caption">
+            «Η αυλή είναι άδεια και οι εξωτερικές κάμερες απενεργοποιήθηκαν. Όλα είναι έτοιμα για τη ληστεία του αιώνα...»
+        </div>
+    </div>
+
+    <!-- Σκηνή 2: Στην ταράτσα, λίγο πριν την είσοδο -->
+    <div class="cutscene-slide" id="scene-2">
+        <img src="images-2.jpeg" alt="Ταράτσα Λούβρου">
+        <div class="cutscene-caption">
+            «Είμαστε στην ταράτσα πάνω από την Πτέρυγα Richelieu. Στόχος: το Ξίφος του Καρλομάγνου. Μπαίνουμε μέσα.»
+        </div>
+    </div>
+</div>
+
+<div class="cinema-bar top"></div>
+<div class="cinema-bar bottom"></div>
+<div class="cinema-subtitle">
+    🔦 Πλησιάζετε το πολύτιμο Ξίφος του Καρλομάγνου...
+</div>
 
 <div id="intro-modal">
     <div class="modal-box">
         <div class="alarm-icon">🚨</div>
         <h1>ΣΥΝΑΓΕΡΜΟΣ!</h1>
         <p>
-            Τα φώτα άναψαν και η Κεντρική Πύλη της Πυραμίδας κλείδωσε!
+            Ο συναγερμός ενεργοποιήθηκε, οι αρχές είναι καθοδόν και η Κεντρική Πύλη της Πυραμίδας κλείδωσε!
             Βρείτε την έξοδο προς την Πτέρυγα Sully!
         </p>
         <button id="start-btn" type="button">Συνέχεια</button>
@@ -282,13 +612,15 @@
             </ul>
         </section>
 
-        <section class="chat-slot-panel">
-            <h2>💬 Chat Ομάδας</h2>
-            <div id="chat-container">
-                Χώρος Chat (Ελευθερία)
-            </div>
-        </section>
+        <div id="chat-container" style="display: none;"></div>
+        <div style="height: 230px; flex-shrink: 0;"></div>
     </aside>
+</div>
+<div class="legend-bar" style="margin-top: 10px; font-size: 0.82rem; color: #777; display: flex; gap: 18px;">
+    <span><b style="color:#00d2ff">●</b> Εσύ</span>
+    <span><b style="color:#ff9900">●</b> Συμπαίκτης</span>
+    <span><b style="color:#e6c36a">[E]</b> Συλλογή εκθέματος</span>
+    <span><b style="color:#00ff88">■</b> Πλάκα Co-Op Γρίφου</span>
 </div>
 
 <script src="apiClient.js"></script>
@@ -296,6 +628,45 @@
 <script src="js/gameSocket.js"></script>
 <script src="js/gameRenderer.js"></script>
 <script src="js/gameChatAndExit.js"></script>
+    <script>
+        const titleScreen = document.getElementById('movie-title-screen');
+        const cutsceneOverlay = document.getElementById('cutscene-overlay');
+        const scene1 = document.getElementById('scene-1');
+        const scene2 = document.getElementById('scene-2');
 
+        // 1. Στα 3.0 δευτ.: Φεύγει η οθόνη τίτλων & ξεκινάει η Σκηνή 1
+        setTimeout(() => {
+        if (titleScreen) {
+        titleScreen.classList.add('fade-out');
+        setTimeout(() => titleScreen.remove(), 1400);
+    }
+        if (cutsceneOverlay && scene1) {
+        cutsceneOverlay.classList.add('active');
+        scene1.classList.add('show');
+    }
+    }, 3000);
+
+        // 2. Στα 7.5 δευτ.: Ομαλή μετάβαση στη Σκηνή 2 (ταράτσα)
+        setTimeout(() => {
+        if (scene1 && scene2) {
+        scene1.classList.remove('show');
+        scene2.classList.add('show');
+    }
+    }, 7500);
+
+        // 3. Στα 12.0 δευτ.: Σβήνει το cutscene & αποκαλύπτεται το παιχνίδι
+        setTimeout(() => {
+        if (cutsceneOverlay) {
+        cutsceneOverlay.classList.remove('active');
+        setTimeout(() => cutsceneOverlay.remove(), 1200);
+    }
+    }, 12000);
+
+        // Απενεργοποιεί το Cinema Mode όταν πατηθεί το κουμπί στο modal
+        document.getElementById('start-btn')?.addEventListener('click', function () {
+        document.body.classList.remove('cinema-mode');
+        this.blur();
+    });
+</script>
 </body>
 </html>

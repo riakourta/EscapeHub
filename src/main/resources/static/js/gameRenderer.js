@@ -18,27 +18,6 @@ if (startBtn && introModal) {
 }
 
 /**
- * Ελέγχει αν ο παίκτης έφτασε στο μπροστινό έκθεμα για να το κλέψει
- */
-function checkHeistTrigger() {
-    if (roomConfig.alarmTriggered || isPanicSequenceRunning) return;
-
-    const target = roomConfig.obstacles.find(o => o.isTarget);
-    if (!target) return;
-
-    const touchBox = {
-        x: playerState.x - 10,
-        y: playerState.y - 10,
-        width: playerState.size + 20,
-        height: playerState.size + 20
-    };
-
-    if (isRectColliding(touchBox, target)) {
-        triggerAlarmSequence(target);
-    }
-}
-
-/**
  * Αγχωτικό εφέ κλοπής: Τρέμουλο οθόνης, κόκκινα flashes και εμφάνιση του Modal συναγερμού
  */
 function triggerAlarmSequence(targetExhibit) {
@@ -141,9 +120,55 @@ function drawRoomElements(isLit) {
     }
 
     // 4. Εκθέματα
+    // 4. Εκθέματα
     obstacles.forEach(obs => {
-        if (obs.collected) return;
         if (!alarmTriggered && obs.hiddenBeforeAlarm) return;
+
+        if (obs.collected) {
+            ctx.save();
+            // Διακριτικό διακεκομμένο πλαίσιο για άδεια προθήκη
+            ctx.fillStyle = isLit ? 'rgba(52, 211, 153, 0.08)' : 'rgba(52, 211, 153, 0.03)';
+            ctx.strokeStyle = isLit ? 'rgba(110, 231, 183, 0.45)' : 'rgba(52, 211, 153, 0.15)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 4]);
+            ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+            ctx.setLineDash([]);
+
+            if (isLit) {
+                const cx = obs.x + obs.width / 2;
+                const cy = obs.y + obs.height / 2 - 7;
+
+                // Απαλός κύκλος badge
+                ctx.beginPath();
+                ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(52, 211, 153, 0.18)';
+                ctx.fill();
+                ctx.strokeStyle = '#6ee7b7';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Smooth vector τικ (με στρογγυλεμένες άκρες)
+                ctx.beginPath();
+                ctx.moveTo(cx - 5, cy);
+                ctx.lineTo(cx - 1.5, cy + 3.5);
+                ctx.lineTo(cx + 5.5, cy - 3.5);
+                ctx.strokeStyle = '#a7f3d0';
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+
+                // Αχνό όνομα εκθέματος από κάτω
+                ctx.fillStyle = 'rgba(167, 243, 208, 0.75)';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(obs.label, cx, obs.y + obs.height - 8);
+            }
+            ctx.restore();
+            return;
+
+        }
 
         if (isLit) {
             ctx.fillStyle = alarmTriggered ? 'rgba(180, 40, 40, 0.35)' : 'rgba(197, 160, 89, 0.3)';
@@ -157,7 +182,6 @@ function drawRoomElements(isLit) {
         ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
         ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
 
-        // Εμφάνιση ονόματος εκθέματος όταν το φωτίζει ο φακός
         if (isLit && obs.label) {
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 11px sans-serif';
@@ -165,6 +189,7 @@ function drawRoomElements(isLit) {
             ctx.fillText(obs.label, obs.x + obs.width / 2, obs.y + obs.height / 2 + 4);
         }
     });
+
 }
 
 /**
@@ -278,10 +303,10 @@ function runAutoHeistIntro() {
 
     const walkInterval = setInterval(() => {
         if (playerState.y > goalY) {
-            playerState.y -= 4;
+            playerState.y -= 1.5;
             playerState.direction = 'up';
             if (typeof teammateState !== 'undefined') {
-                teammateState.y -= 4;
+                teammateState.y -= 1.5;
                 teammateState.direction = 'up';
             }
             renderGame();
@@ -320,8 +345,7 @@ initPlayerControls((state, moved, action, takenExhibit) => {
     }
 
     renderGame();
-    checkHeistTrigger();
 });
 
 renderGame();
-runAutoHeistIntro();
+setTimeout(runAutoHeistIntro, 12500);
