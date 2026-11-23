@@ -31,6 +31,26 @@ const roomConfig = {
             height: 70,
             label: 'Ξίφος Καρλομάγνου',
             isTarget: true
+        },
+        {
+            id: 'hammurabi-code',
+            x: 90,
+            y: 260,
+            width: 130,
+            height: 60,
+            label: 'Κώδικας Χαμουραμπί',
+            collected: false,
+            hiddenBeforeAlarm: true
+        },
+        {
+            id: 'winged-bulls',
+            x: 580,
+            y: 260,
+            width: 130,
+            height: 60,
+            label: 'Φτερωτοί Ταύροι',
+            collected: false,
+            hiddenBeforeAlarm: true
         }
     ],
 
