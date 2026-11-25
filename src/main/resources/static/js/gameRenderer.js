@@ -293,7 +293,87 @@ function renderGame() {
 
     drawNetworkPlayer(playerState);
 }
-let isIntroAutoWalking = false;
+
+let isIntroAutoWalking = true;
+let introStarted = false;
+
+function runAutoHeistIntro() {
+    if (introStarted) return;
+    introStarted = true;
+
+    const target = roomConfig.obstacles.find(o => o.isTarget);
+    if (!target || roomConfig.alarmTriggered || target.collected) {
+        isIntroAutoWalking = false;
+        renderGame();
+        return;
+    }
+
+    const goalX = target.x + (target.width - playerState.size) / 2;
+    const goalY = target.y + target.height + 8;
+    const step = 5;
+
+    const walkInterval = setInterval(() => {
+        if (roomConfig.alarmTriggered || target.collected) {
+            clearInterval(walkInterval);
+            isIntroAutoWalking = false;
+            renderGame();
+            return;
+        }
+
+        const dx = goalX - playerState.x;
+        const dy = goalY - playerState.y;
+
+        if (Math.abs(dx) > step) {
+            playerState.x += Math.sign(dx) * step;
+            playerState.direction = dx > 0 ? 'right' : 'left';
+        } else if (Math.abs(dy) > step) {
+            playerState.x = goalX;
+            playerState.y += Math.sign(dy) * step;
+            playerState.direction = dy > 0 ? 'down' : 'up';
+        } else {
+            playerState.x = goalX;
+            playerState.y = goalY;
+            playerState.direction = 'up';
+
+            clearInterval(walkInterval);
+            isIntroAutoWalking = false;
+
+            if (typeof gameSocket !== 'undefined') {
+                gameSocket.sendMove(playerState);
+                const sent = gameSocket.sendExhibitCollected(target);
+                // Fallback αν δεν υπάρχει ανοιχτή σύνδεση με τον server
+                if (!sent && !roomConfig.alarmTriggered && !isPanicSequenceRunning) {
+                    target.collected = true;
+                    triggerAlarmSequence(target);
+                }
+            } else if (!roomConfig.alarmTriggered && !isPanicSequenceRunning) {
+                target.collected = true;
+                triggerAlarmSequence(target);
+            }
+
+            renderGame();
+            return;
+        }
+
+        if (typeof gameSocket !== 'undefined') {
+            gameSocket.sendMove(playerState);
+        }
+        renderGame();
+    }, 55);
+}
+
+// Περιμένει να έρθει το welcome από τον server (ώστε να μην κάνει reset η θέση) και ξεκινάει το auto-walk
+function waitAndStartIntro() {
+    let attempts = 0;
+    const checkReady = setInterval(() => {
+        attempts++;
+        if (localPlayerId !== null || attempts >= 20) {
+            clearInterval(checkReady);
+            runAutoHeistIntro();
+        }
+    }, 100);
+}
+
 // Αρχικοποίηση χειρισμού, intro & πρώτου render
 initPlayerControls((state, moved, action, takenExhibit) => {
     if (isPanicSequenceRunning || isIntroAutoWalking) return;
@@ -306,12 +386,10 @@ initPlayerControls((state, moved, action, takenExhibit) => {
         if (typeof gameSocket !== 'undefined') {
             gameSocket.sendMove(state);
         }
-
-
     }
 
     renderGame();
 });
 
 renderGame();
-setTimeout(runAutoHeistIntro, 12500);
+waitAndStartIntro();
