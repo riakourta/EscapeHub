@@ -285,10 +285,12 @@
                 transform: translate(5px, 5px);
             }
         }
-        /* ===== CINEMA INTRO MODE ===== */
+       /* ===== CINEMA INTRO MODE ===== */
         body.cinema-mode .hud,
         body.cinema-mode .sidebar,
-        body.cinema-mode .legend-bar {
+        body.cinema-mode .legend-bar,
+        body.cinema-mode #search-bar-slot,
+        body.cinema-mode #missions-hud-slot {
             display: none !important;
         }
 
@@ -546,6 +548,14 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+
+    <!-- Κάθε άτομο δημιουργεί και γράφει ΜΟΝΟ στο δικό του CSS αρχείο (φάκελος static/css/) -->
+    <link rel="stylesheet" href="css/playerColors.css">  <!-- ΑΓΓΕΛΟΣ: Ενιαία χρώματα -->
+    <link rel="stylesheet" href="css/searchBar.css">     <!-- ΕΛΕΥΘΕΡΙΑ: Search Bar -->
+    <link rel="stylesheet" href="css/inventory.css">     <!-- ΧΡΗΣΤΟΣ: Προσωπικό Inventory -->
+    <link rel="stylesheet" href="css/exhibitModal.css">  <!-- ΚΙΟΥΣΗΣ: Καρτέλα εκθέματος (πλήκτρο I) -->
+    <link rel="stylesheet" href="css/puzzleUi.css">      <!-- ΡΟΖΑΛΙΑ: UI Γρίφων & Door Unlock -->
+    <link rel="stylesheet" href="css/missionsHud.css">   <!-- ΓΚΕΛΗΣ: Παράθυρο & HUD Αποστολών -->
 </head>
 
 <body class="cinema-mode">
@@ -598,7 +608,11 @@
     Πλησιάστε τα εκθέματα (⬆️ ⬇️ ⬅️ ➡️) & πατήστε <b>E</b>
 </div>
 
+<div id="search-bar-slot" style="position: relative; z-index: 50; width: 1126px; max-width: 100%;"></div>
+
 <div class="main-layout">
+    <div id="missions-hud-slot"></div>
+
     <div id="game-wrapper">
         <canvas id="museumCanvas" width="800" height="600"></canvas>
         <div id="darkness" class="darkness-overlay"></div>
@@ -612,10 +626,13 @@
             </ul>
         </section>
 
+        <div id="inventory-slot"></div>
+
         <div id="chat-container" style="display: none;"></div>
         <div style="height: 230px; flex-shrink: 0;"></div>
     </aside>
 </div>
+
 <div class="legend-bar" style="margin-top: 10px; font-size: 0.82rem; color: #777; display: flex; gap: 18px;">
     <span><b style="color:#00d2ff">●</b> Εσύ</span>
     <span><b style="color:#ff9900">●</b> Συμπαίκτης</span>
@@ -623,11 +640,20 @@
     <span><b style="color:#00ff88">■</b> Πλάκα Co-Op Γρίφου</span>
 </div>
 
+<div id="modals-root"></div>
 <script src="apiClient.js"></script>
 <script src="js/playerMovement.js"></script>
 <script src="js/gameSocket.js"></script>
 <script src="js/gameRenderer.js"></script>
 <script src="js/gameChatAndExit.js"></script>
+
+<script src="js/playerColors.js" defer></script>
+<script src="js/introCutscene.js" defer></script>
+<script src="js/exhibitSearchBar.js" defer></script>
+<script src="js/inventoryPanel.js" defer></script>
+<script src="js/exhibitModal.js" defer></script>
+<script src="js/puzzleUi.js" defer></script>
+<script src="js/missionsHud.js" defer></script>
     <script>
         const titleScreen = document.getElementById('movie-title-screen');
         const cutsceneOverlay = document.getElementById('cutscene-overlay');

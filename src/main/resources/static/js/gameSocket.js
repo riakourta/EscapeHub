@@ -137,6 +137,13 @@ const gameSocket = (() => {
 
         if (!msg || typeof msg !== 'object') return;
 
+        // Event Bus για όλα τα νέα features (Άτομα 2, 4, 5, 6):
+        // ΜΗΝ προσθέτετε νέα if εδώ — ακούστε το event με:
+        // window.addEventListener('ws:message', (e) => { const msg = e.detail; ... });
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ws:message', { detail: msg }));
+        }
+
         if (msg.type === 'welcome') {
             if (!msg.player) return;
 
@@ -307,6 +314,7 @@ const gameSocket = (() => {
 
     return {
         connect,
+        emit,
         sendMove,
         sendExhibitCollected,
         logToJournal,
