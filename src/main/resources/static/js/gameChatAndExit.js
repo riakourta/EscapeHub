@@ -50,7 +50,25 @@
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        #live-chat-widget.is-collapsed {
+            height: auto;
+            padding: 10px 12px;
+        }
+        #live-chat-widget.is-collapsed .chat-title {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+        #live-chat-widget.is-collapsed #chat-messages,
+        #live-chat-widget.is-collapsed .chat-form {
+            display: none;
+        }
+
         .chat-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
             font-size: 0.85rem;
             font-weight: 700;
             text-transform: uppercase;
@@ -60,6 +78,56 @@
             padding-bottom: 6px;
             margin-bottom: 8px;
         }
+        .chat-title-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        .chat-unread-badge {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background-color: #dc2626;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: 0;
+            text-transform: none;
+            box-sizing: border-box;
+            font-variant-numeric: tabular-nums;
+            box-shadow: 0 0 8px rgba(220, 38, 38, 0.55);
+        }
+        .chat-unread-badge.is-visible {
+            display: inline-flex;
+        }
+        #chat-toggle-btn {
+            background: transparent;
+            border: 1px solid #374151;
+            color: #e5e7eb;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            line-height: 1;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+        #chat-toggle-btn:hover {
+            background-color: #1f2430;
+            border-color: #eab308;
+            color: #eab308;
+        }
+
         #chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -144,7 +212,13 @@
     const chatWidget = document.createElement('section');
     chatWidget.id = 'live-chat-widget';
     chatWidget.innerHTML = `
-        <div class="chat-title">💬 Live Chat</div>
+        <div class="chat-title">
+            <div class="chat-title-left">
+                <span>💬 Live Chat</span>
+                <span id="chat-unread-badge" class="chat-unread-badge" aria-live="polite">0</span>
+            </div>
+            <button type="button" id="chat-toggle-btn" title="Κλείσιμο chat" aria-label="Εναλλαγή παραθύρου chat" aria-expanded="true">▼</button>
+        </div>
         <div id="chat-messages"></div>
         <form class="chat-form" id="chat-form">
             <input type="text" id="chat-input" placeholder="Type a message..." autocomplete="off" maxlength="200" />
@@ -169,8 +243,43 @@
     const chatMessagesEl = document.getElementById('chat-messages');
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
+    const chatToggleBtn = document.getElementById('chat-toggle-btn');
+    const chatUnreadBadge = document.getElementById('chat-unread-badge');
     const abortReasonEl = document.getElementById('abort-reason');
     const abortBackBtn = document.getElementById('abort-back-btn');
+
+    let isChatCollapsed = false;
+    let unreadCount = 0;
+
+    function updateUnreadBadge() {
+        if (isChatCollapsed && unreadCount > 0) {
+            chatUnreadBadge.textContent = String(unreadCount);
+            chatUnreadBadge.classList.add('is-visible');
+        } else {
+            chatUnreadBadge.textContent = '0';
+            chatUnreadBadge.classList.remove('is-visible');
+        }
+    }
+
+    function setChatCollapsed(collapsed) {
+        isChatCollapsed = collapsed;
+        chatWidget.classList.toggle('is-collapsed', collapsed);
+        chatToggleBtn.textContent = collapsed ? '▲' : '▼';
+        chatToggleBtn.title = collapsed ? 'Άνοιγμα chat' : 'Κλείσιμο chat';
+        chatToggleBtn.setAttribute('aria-expanded', String(!collapsed));
+
+        if (!collapsed) {
+            unreadCount = 0;
+            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        }
+
+        updateUnreadBadge();
+    }
+
+    chatToggleBtn.addEventListener('click', () => {
+        setChatCollapsed(!isChatCollapsed);
+        chatToggleBtn.blur();
+    });
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = new WebSocket(protocol + '//' + window.location.host + WS_ENDPOINT);
@@ -219,15 +328,15 @@
     });
 
     exitBtn.addEventListener('click', () => {
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    type: 'LEAVE_GAME',
-                    username: `${playerColor}|${nickname}`
-                }));
-                socket.close();
-            }
-            window.location.href = EXIT_PAGE;
-        });
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'LEAVE_GAME',
+                username: `${playerColor}|${nickname}`
+            }));
+            socket.close();
+        }
+        window.location.href = EXIT_PAGE;
+    });
 
     abortBackBtn.addEventListener('click', () => {
         window.location.href = EXIT_PAGE;
@@ -246,6 +355,11 @@
 
         msgDiv.append(senderSpan, textNode);
         chatMessagesEl.appendChild(msgDiv);
-        chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        if (isChatCollapsed) {
+            unreadCount += 1;
+            updateUnreadBadge();
+        } else {
+            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        }
     }
 })();
