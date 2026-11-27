@@ -9,8 +9,11 @@ import gr.ihu.escapehub.movement.dto.PlayerState;
 import gr.ihu.escapehub.movement.service.MovementStateService;
 import gr.ihu.escapehub.movement.service.MovementTokenService;
 import gr.ihu.escapehub.puzzle.service.PuzzleService;
+import gr.ihu.escapehub.mission.dto.MissionDto;
+import gr.ihu.escapehub.state.service.GameStateManager;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
@@ -36,13 +39,13 @@ public class MovementHandler extends TextWebSocketHandler {
     private final ExhibitService exhibits;
     private final PuzzleService puzzles;
     private final JournalService journal;
+    private final GameStateManager gameStateManager;
 
     private final Map<String, WebSocketSession> sessions =
             new LinkedHashMap<>();
 
     private final Map<String, String> playerIds =
             new LinkedHashMap<>();
-
     public MovementHandler(
             ObjectMapper mapper,
             MovementStateService state,
@@ -50,6 +53,19 @@ public class MovementHandler extends TextWebSocketHandler {
             ExhibitService exhibits,
             PuzzleService puzzles,
             JournalService journal
+    )
+    {
+        this(mapper, state, tokens, exhibits, puzzles, journal, new GameStateManager(3600, 3));
+    }
+    @Autowired
+    public MovementHandler(
+            ObjectMapper mapper,
+            MovementStateService state,
+            MovementTokenService tokens,
+            ExhibitService exhibits,
+            PuzzleService puzzles,
+            JournalService journal,
+            GameStateManager gameStateManager
     ) {
         this.mapper = mapper;
         this.state = state;
@@ -57,6 +73,7 @@ public class MovementHandler extends TextWebSocketHandler {
         this.exhibits = exhibits;
         this.puzzles = puzzles;
         this.journal = journal;
+        this.gameStateManager = gameStateManager;
     }
 
     @Override
@@ -155,6 +172,7 @@ public class MovementHandler extends TextWebSocketHandler {
 
         sessions.put(session.getId(), session);
         playerIds.put(session.getId(), playerId);
+        gameStateManager.addPlayer(playerId);
 
         send(session, Map.of(
                 "type", "welcome",
@@ -293,6 +311,17 @@ public class MovementHandler extends TextWebSocketHandler {
             sendSafely(peer, response);
         }
     }
+    public void broadcastMissionUpdated(MissionDto mission, List<MissionDto> missions) {
+        Map<String, Object> response = Map.of(
+                "type", "MISSION_UPDATED",
+                "mission", mission,
+                "missions", missions
+        );
+
+        for (WebSocketSession peer : List.copyOf(sessions.values())) {
+            sendSafely(peer, response);
+        }
+    }
 
     @Override
     public synchronized void afterConnectionClosed(
@@ -306,6 +335,17 @@ public class MovementHandler extends TextWebSocketHandler {
             state.removePlayer(playerId);
             updatePuzzle();
             broadcastSnapshot();
+            GameStateManager.LeaveResult leaveResult = gameStateManager.removePlayer(playerId);
+            if (leaveResult.outcome() == GameStateManager.PlayerLeaveOutcome.GAME_STOPPED) {
+                Map<String, Object> abortMsg = Map.of(
+                        "type", "GAME_ABORTED",
+                        "remainingPlayers", leaveResult.remainingPlayers(),
+                        "reason", leaveResult.message()
+                );
+                for (WebSocketSession peer : List.copyOf(sessions.values())) {
+                    sendSafely(peer, abortMsg);
+                }
+            }
         }
     }
 

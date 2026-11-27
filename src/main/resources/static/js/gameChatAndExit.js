@@ -185,7 +185,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 2000;
+            z-index: 9999;
             text-align: center;
             padding: 2rem;
         }
@@ -299,6 +299,13 @@
         if (data.type === 'CHAT_MESSAGE') {
             appendChatMessage(data.sender, data.color, data.message);
         } else if (data.type === 'GAME_ABORTED') {
+            if (data.reason) abortReasonEl.textContent = data.reason;
+            abortModal.style.display = 'flex';
+        }
+    });
+    window.addEventListener('ws:message', (event) => {
+        const data = event.detail;
+        if (data && data.type === 'GAME_ABORTED') {
             if (data.reason) abortReasonEl.textContent = data.reason;
             abortModal.style.display = 'flex';
         }
