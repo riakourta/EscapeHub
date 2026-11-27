@@ -37,6 +37,25 @@ public class JournalService {
         );
     }
 
+    public synchronized List<JournalEntry> recordClue(
+            String clueId,
+            String title,
+            String description,
+            String sourceExhibit
+    ) {
+        StringBuilder message = new StringBuilder("Στοιχείο");
+        if (sourceExhibit != null && !sourceExhibit.isBlank()) {
+            message.append(" [").append(sourceExhibit.trim()).append("]");
+        }
+        message.append(": ").append(title != null ? title.trim() : "");
+        if (description != null && !description.isBlank()) {
+            message.append(" — ").append(description.trim());
+        }
+
+        addOnce("CLUE_SHARED", clueId, message.toString());
+        return getEntries();
+    }
+
     public synchronized List<JournalEntry> getEntries() {
         return List.copyOf(entries.values());
     }
