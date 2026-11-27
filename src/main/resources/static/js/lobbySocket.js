@@ -37,10 +37,11 @@
         localStorage.getItem('username') ||
         `Παίκτης_${crypto.randomUUID().slice(0, 3)}`;
 
-    const playerColor =
+    const playerColor = window.PlayerColors.toHex(
         localStorage.getItem(colorKey) ||
         localStorage.getItem('avatarColor') ||
-        '#38bdf8';
+        'blue'
+    );
 
     const token = localStorage.getItem(tokenKey) || localStorage.getItem('jwtToken') || '';
 
@@ -105,19 +106,18 @@
         if (Array.isArray(data.players)) {
             playerListEl.replaceChildren(
                 ...data.players.map(rawEntry => {
+
                     const [rawColor, ...nameParts] = rawEntry.includes('|')
                         ? rawEntry.split('|')
-                        : ['#38bdf8', rawEntry];
+                        : ['blue', rawEntry];
+
                     const cleanName = nameParts.join('|');
-                    const color = rawColor.trim() || '#38bdf8';
+                    const colorName = window.PlayerColors.normalize(rawColor);
 
                     const li = document.createElement('li');
 
                     const badge = document.createElement('span');
-                    badge.className = 'player-badge';
-                    badge.style.color = color;
-                    badge.style.borderColor = color;
-                    badge.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    badge.className = `player-badge theme-${colorName}`;
                     badge.innerHTML = AVATAR_SVG;
 
                     const nameSpan = document.createElement('span');

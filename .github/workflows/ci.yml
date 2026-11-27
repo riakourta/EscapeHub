@@ -53,3 +53,40 @@ jobs:
           name: test-reports
           path: target/surefire-reports/
           if-no-files-found: ignore
+
+  docker-image:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE_NAME: ghcr.io/riakourta/escapehub
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --tag "${IMAGE_NAME}:latest" \
+            --tag "${IMAGE_NAME}:${GITHUB_SHA}" \
+            .
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GH_TOKEN" |
+            docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Publish Docker image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker push "${IMAGE_NAME}:latest"
+          docker push "${IMAGE_NAME}:${GITHUB_SHA}"
