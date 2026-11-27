@@ -1,4 +1,24 @@
 {
-  "roomId": 1,
-  "puzzles": []
+  "roomId": "richelieu-wing",
+  "nextRoom": "room2.html",
+  "puzzles": [
+    {
+      "id": "key-1-crown-year",
+      "title": "Το Πρώτο Κλειδί (Ο Χρόνος)",
+      "description": "Καταχώριση του κωδικού 1722 στο Κοινό Ημερολόγιο.",
+      "type": "JOURNAL_CLUE",
+      "requiresDifferentPlayers": true,
+      "acceptedSolutions": ["1722"],
+      "isFinal": false
+    },
+    {
+      "id": "key-2-regent-weight",
+      "title": "Το Δεύτερο Κλειδί (Το Βάρος)",
+      "description": "Καταχώριση του κωδικού 140 στο Κοινό Ημερολόγιο από διαφορετικό παίκτη.",
+      "type": "JOURNAL_CLUE",
+      "requiresDifferentPlayers": true,
+      "acceptedSolutions": ["140", "140.64", "140,64"],
+      "isFinal": true
+    }
+  ]
 }

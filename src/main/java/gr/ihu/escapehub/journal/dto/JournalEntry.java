@@ -4,6 +4,10 @@ public record JournalEntry(
         long sequence,
         String type,
         String targetId,
-        String message
+        String message,
+        String author
 ) {
+    public JournalEntry(long sequence, String type, String targetId, String message) {
+        this(sequence, type, targetId, message, null);
+    }
 }

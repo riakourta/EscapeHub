@@ -1,82 +1,76 @@
 package gr.ihu.escapehub.puzzle;
 
-import gr.ihu.escapehub.movement.dto.PlayerState;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import gr.ihu.escapehub.journal.service.JournalService;
+import gr.ihu.escapehub.puzzle.event.DoorUnlockedEvent;
 import gr.ihu.escapehub.puzzle.service.PuzzleService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class PuzzleServiceTest {
 
-    private final PuzzleService service = new PuzzleService();
+    private JournalService journalService;
+    private PuzzleService puzzleService;
+    private List<DoorUnlockedEvent> publishedEvents;
 
-    @Test
-    void twoDifferentPlayersSolvePuzzle() {
-        var result = service.evaluate(List.of(
-                player("1", 250, 455),
-                player("2", 510, 455)
-        ));
-
-        assertTrue(result.solved());
-        assertTrue(result.plates().get(0).active());
-        assertTrue(result.plates().get(1).active());
+    @BeforeEach
+    void setUp() {
+        journalService = new JournalService();
+        publishedEvents = new ArrayList<>();
+        ApplicationEventPublisher publisher = event -> {
+            if (event instanceof DoorUnlockedEvent doorEvent) {
+                publishedEvents.add(doorEvent);
+            }
+        };
+        puzzleService = new PuzzleService(new ObjectMapper(), journalService, publisher);
     }
 
     @Test
-    void onePlayerCannotSolvePuzzle() {
-        var result = service.evaluate(List.of(
-                player("1", 250, 455)
-        ));
-
-        assertFalse(result.solved());
-        assertTrue(result.plates().get(0).active());
-        assertFalse(result.plates().get(1).active());
+    void doorStartsLocked() {
+        assertFalse(puzzleService.isDoorUnlocked());
+        assertEquals("room2.html", puzzleService.getNextRoom());
     }
 
     @Test
-    void sameIdentityCannotCountAsTwoPlayers() {
-        var result = service.evaluate(List.of(
-                player("1", 250, 455),
-                player("1", 510, 455)
-        ));
+    void doorRemainsLockedWhenSamePlayerEntersBothCodes() {
+        journalService.recordClue("1722", "rozalia");
+        journalService.recordClue("140", "rozalia");
 
-        assertFalse(result.solved());
+        assertFalse(puzzleService.isDoorUnlocked());
+        assertTrue(publishedEvents.isEmpty());
     }
 
     @Test
-    void visitingPlatesAtDifferentTimesDoesNotSolvePuzzle() {
-        service.evaluate(List.of(
-                player("1", 250, 455)
-        ));
+    void doorRemainsLockedWhenWrongCodeIsEntered() {
+        journalService.recordClue("1722", "rozalia");
+        journalService.recordClue("999", "eleftheria");
 
-        var result = service.evaluate(List.of(
-                player("1", 510, 455)
-        ));
-
-        assertFalse(result.solved());
-        assertFalse(result.plates().get(0).active());
-        assertTrue(result.plates().get(1).active());
+        assertFalse(puzzleService.isDoorUnlocked());
+        assertTrue(publishedEvents.isEmpty());
     }
 
     @Test
-    void solvedPuzzleStaysSolvedAfterPlayersLeave() {
-        service.evaluate(List.of(
-                player("1", 250, 455),
-                player("2", 510, 455)
-        ));
+    void doorUnlocksAutomaticallyWhenTwoDifferentPlayersEnterValidCodes() {
+        journalService.recordClue("1722", "rozalia");
+        assertFalse(puzzleService.isDoorUnlocked());
 
-        var result = service.evaluate(List.of());
-
-        assertTrue(result.solved());
-        assertTrue(result.plates().stream()
-                .noneMatch(plate -> plate.active()));
+        journalService.recordClue("140", "eleftheria");
+        assertTrue(puzzleService.isDoorUnlocked());
+        assertEquals(1, publishedEvents.size());
+        assertEquals("room2.html", publishedEvents.get(0).nextRoom());
     }
 
-    private PlayerState player(String id, double x, double y) {
-        return new PlayerState(
-                id, "Player " + id, "blue", x, y, "up"
-        );
+    @Test
+    void doorAcceptsDecimalCaratFormatFromSecondPlayer() {
+        journalService.recordClue("1722", "player1");
+        journalService.recordClue("140,64", "player2");
+
+        assertTrue(puzzleService.isDoorUnlocked());
     }
 }
