@@ -1,0 +1,101 @@
+.inventory-panel {
+    background: #0d0d14;
+    border: 1px solid #262638;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    max-height: 155px;
+    box-sizing: border-box;
+}
+
+.inventory-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #262638;
+}
+
+.inventory-panel-title {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e6c36a;
+    letter-spacing: 0.3px;
+}
+
+.inventory-count-badge {
+    font-size: 0.72rem;
+    color: #cbd5e1;
+    background: #1a1a28;
+    border: 1px solid #2e2e44;
+    border-radius: 10px;
+    padding: 1px 7px;
+}
+
+.inventory-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.inventory-empty {
+    font-size: 0.78rem;
+    color: #8b8fa3;
+    font-style: italic;
+    padding: 4px 2px;
+}
+
+.inventory-item {
+    background: #141422;
+    border: 1px solid #262638;
+    border-radius: 6px;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.inventory-item-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.inventory-item-desc {
+    font-size: 0.73rem;
+    color: #94a3b8;
+    line-height: 1.3;
+}
+
+.inventory-share-btn {
+    align-self: flex-start;
+    margin-top: 2px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #0d0d14;
+    background: #e6c36a;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.inventory-share-btn:hover:not(:disabled) {
+    opacity: 0.88;
+}
+
+.inventory-share-btn:disabled {
+    background: #262638;
+    color: #94a3b8;
+    cursor: default;
+}
