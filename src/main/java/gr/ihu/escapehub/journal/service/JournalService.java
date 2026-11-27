@@ -48,7 +48,9 @@ public class JournalService {
     public synchronized List<JournalEntry> getEntries() {
         return List.copyOf(entries.values());
     }
-
+    private JournalEntry addOnce(String type, String targetId, String message) {
+        return addOnce(type, targetId, message, null);
+    }
     private JournalEntry addOnce(String type, String targetId, String message, String author) {
         String key = type + ":" + targetId;
         JournalEntry existing = entries.get(key);
