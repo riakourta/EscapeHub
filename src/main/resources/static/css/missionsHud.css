@@ -1,0 +1,170 @@
+/* Μόνιμο HUD Αποστολών (πάνω αριστερά δίπλα από το δωμάτιο) */
+#missions-hud-slot {
+    width: 230px;
+    flex-shrink: 0;
+    align-self: flex-start;
+}
+
+.missions-hud-panel {
+    background: #0d0d14;
+    border: 1px solid #262638;
+    border-radius: 6px;
+    padding: 12px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+
+.missions-hud-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1f1f2e;
+}
+
+.missions-hud-header h2 {
+    font-size: 0.92rem;
+    color: #e6c36a;
+    margin: 0;
+}
+
+.missions-hud-reopen {
+    background: transparent;
+    border: 1px solid #32324a;
+    color: #aaa;
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.missions-hud-reopen:hover {
+    color: #fff;
+    border-color: #e6c36a;
+}
+
+.missions-hud-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.missions-hud-item {
+    background: #141420;
+    padding: 8px 9px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    border-left: 3px solid #ff4d4d;
+    color: #ff5c5c;
+    transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+
+.missions-hud-item.completed {
+    border-left-color: #00e676;
+    color: #00e676;
+    background: #102119;
+}
+
+/* Modal Αποστολών (μέσα στο #modals-root) */
+.missions-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 5, 10, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1200;
+    padding: 20px;
+}
+
+.missions-modal-box {
+    position: relative;
+    width: 100%;
+    max-width: 620px;
+    background: #0d0d15;
+    border: 1px solid #8b0000;
+    border-radius: 8px;
+    padding: 24px 26px;
+    box-shadow: 0 0 35px rgba(255, 0, 0, 0.28);
+    color: #e6e6e6;
+}
+
+.missions-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: #1c1c2a;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.missions-modal-close:hover {
+    background: #b30000;
+    border-color: #ff4d4d;
+}
+
+.missions-modal-title {
+    color: #ff4444;
+    font-size: 1.15rem;
+    margin: 0 0 6px 0;
+    padding-right: 34px;
+}
+
+.missions-modal-subtitle {
+    color: #b0b0c0;
+    font-size: 0.88rem;
+    margin: 0 0 16px 0;
+    line-height: 1.45;
+}
+
+.missions-modal-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.missions-modal-card {
+    background: #141422;
+    border: 1px solid #262638;
+    border-left: 4px solid #ff4d4d;
+    border-radius: 5px;
+    padding: 10px 12px;
+}
+
+.missions-modal-card.completed {
+    border-left-color: #00e676;
+    background: #102119;
+}
+
+.missions-modal-card h3 {
+    margin: 0 0 4px 0;
+    font-size: 0.92rem;
+    color: #ff5c5c;
+}
+
+.missions-modal-card.completed h3 {
+    color: #00e676;
+}
+
+.missions-modal-card p {
+    margin: 0;
+    font-size: 0.84rem;
+    color: #d0d0dc;
+    line-height: 1.45;
+}

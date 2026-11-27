@@ -57,6 +57,9 @@ public class GameStateManager {
     public void addPlayer(String playerId) {
         if (playerId != null && !playerId.isBlank()) {
             activePlayers.add(playerId.trim());
+            if (activePlayers.size() >= minPlayers) {
+                gameActive.set(true);
+            }
         }
     }
 
