@@ -75,6 +75,15 @@ const ExhibitInspector = (() => {
         element.classList.toggle('error', isError);
     }
 
+    function buildInventoryItem(exhibit, clue, index) {
+            return {
+                id: clue.id || clue.clueId || `${exhibit.id}-clue-${index + 1}`,
+                title: clue.title || exhibit.name || exhibit.label || 'Στοιχείο',
+                description: clue.description || clue.text || '',
+                shared: false
+            };
+    }
+
     async function handleAddToInventory(clue, feedbackEl) {
         try {
             if (window.InventoryActions && typeof window.InventoryActions.addToInventory === 'function') {
@@ -256,41 +265,43 @@ const ExhibitInspector = (() => {
             const feedbackEl = document.createElement('div');
             feedbackEl.className = 'exhibit-feedback';
 
-            for (const clue of clues) {
-                const clueCard = document.createElement('div');
-                clueCard.className = 'exhibit-clue-card';
+            clues.forEach((clue, index) => {
+                            const itemPayload = buildInventoryItem(exhibit, clue, index);
 
-                const cTitle = document.createElement('div');
-                cTitle.className = 'exhibit-clue-title';
-                cTitle.textContent = clue.title;
+                            const clueCard = document.createElement('div');
+                            clueCard.className = 'exhibit-clue-card';
 
-                const cText = document.createElement('div');
-                cText.className = 'exhibit-clue-text';
-                cText.textContent = clue.text;
+                            const cTitle = document.createElement('div');
+                            cTitle.className = 'exhibit-clue-title';
+                            cTitle.textContent = clue.title;
 
-                const actions = document.createElement('div');
-                actions.className = 'exhibit-clue-actions';
+                            const cText = document.createElement('div');
+                            cText.className = 'exhibit-clue-text';
+                            cText.textContent = clue.text || clue.description || '';
 
-                const btnInv = document.createElement('button');
-                btnInv.type = 'button';
-                btnInv.className = 'exhibit-btn exhibit-btn-inventory';
-                btnInv.textContent = '🎒 Προσθήκη στο Inventory';
-                btnInv.addEventListener('click', () => handleAddToInventory(clue, feedbackEl));
+                            const actions = document.createElement('div');
+                            actions.className = 'exhibit-clue-actions';
 
-                const btnJournal = document.createElement('button');
-                btnJournal.type = 'button';
-                btnJournal.className = 'exhibit-btn exhibit-btn-journal';
-                btnJournal.textContent = '📜 Προσθήκη στο Κοινό Ημερολόγιο';
-                btnJournal.addEventListener('click', () => handleAddToJournal(clue, feedbackEl));
+                            const btnInv = document.createElement('button');
+                            btnInv.type = 'button';
+                            btnInv.className = 'exhibit-btn exhibit-btn-inventory';
+                            btnInv.textContent = '🎒 Προσθήκη στο Inventory';
+                            btnInv.addEventListener('click', () => handleAddToInventory(itemPayload, feedbackEl));
 
-                actions.appendChild(btnInv);
-                actions.appendChild(btnJournal);
+                            const btnJournal = document.createElement('button');
+                            btnJournal.type = 'button';
+                            btnJournal.className = 'exhibit-btn exhibit-btn-journal';
+                            btnJournal.textContent = '📜 Προσθήκη στο Κοινό Ημερολόγιο';
+                            btnJournal.addEventListener('click', () => handleAddToJournal(itemPayload, feedbackEl));
 
-                clueCard.appendChild(cTitle);
-                clueCard.appendChild(cText);
-                clueCard.appendChild(actions);
-                cluesSection.appendChild(clueCard);
-            }
+                            actions.appendChild(btnInv);
+                            actions.appendChild(btnJournal);
+
+                            clueCard.appendChild(cTitle);
+                            clueCard.appendChild(cText);
+                            clueCard.appendChild(actions);
+                            cluesSection.appendChild(clueCard);
+                        });
 
             cluesSection.appendChild(feedbackEl);
             card.appendChild(cluesSection);
